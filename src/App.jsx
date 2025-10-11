@@ -4,10 +4,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// IMPORTANT: Replace these with your actual API keys
-const HUME_API_KEY = 'cDLi8bqbXLDjdlHnuUIQoNbDJkXAgPTBtwYNVmyNeGgTooX9';
-const HUME_SECRET_KEY = 'jWuzyplmAjUHvGydkmg9fOceI3zcoVmlgWTaASvvOInRyFVmUCF38oZAGoJxD9Eh';
-const GEMINI_API_KEY = 'AIzaSyAXoyqUc61El_myADaXx821jYJaz7GsEiM';
+// API Keys from environment variables
+const HUME_API_KEY = import.meta.env.VITE_HUME_API_KEY;
+const HUME_SECRET_KEY = import.meta.env.VITE_HUME_SECRET_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 function App() {
   const [isRecording, setIsRecording] = useState(false);
