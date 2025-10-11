@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Square, Download, Trash2, Activity, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // IMPORTANT: Replace these with your actual API keys
 const HUME_API_KEY = 'cDLi8bqbXLDjdlHnuUIQoNbDJkXAgPTBtwYNVmyNeGgTooX9';
@@ -26,6 +26,7 @@ function App() {
   const streamRef = useRef(null);
   const timerRef = useRef(null);
   const frameIntervalRef = useRef(null);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -34,18 +35,21 @@ function App() {
       }
       if (timerRef.current) clearInterval(timerRef.current);
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.close();
+      }
     };
   }, []);
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           facingMode: 'user'
-        }, 
-        audio: false 
+        },
+        audio: false
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -102,28 +106,127 @@ function App() {
     return canvas.toDataURL('image/jpeg', 0.8);
   };
 
-  const generateMockEmotions = (currentTime) => {
-    // Generate realistic emotion patterns for demo
-    const baseJoy = 0.4 + Math.random() * 0.3;
-    const baseFear = 0.1 + Math.random() * 0.2;
-    const baseSadness = 0.1 + Math.random() * 0.15;
-    const baseAnger = 0.05 + Math.random() * 0.1;
-    const baseSurprise = 0.05 + Math.random() * 0.15;
-    const baseDisgust = 0.03 + Math.random() * 0.07;
-    
-    // Add time-based variation
-    const timeEffect = Math.sin(currentTime / 30) * 0.1;
-    
-    return {
-      timestamp: currentTime,
-      joy: Math.max(0, Math.min(1, baseJoy + timeEffect)),
-      fear: Math.max(0, Math.min(1, baseFear - timeEffect * 0.5)),
-      sadness: Math.max(0, Math.min(1, baseSadness)),
-      anger: Math.max(0, Math.min(1, baseAnger)),
-      surprise: Math.max(0, Math.min(1, baseSurprise + Math.random() * 0.1)),
-      disgust: Math.max(0, Math.min(1, baseDisgust)),
-      neutral: Math.max(0, Math.min(1, 0.3 + Math.random() * 0.2))
-    };
+
+
+  const connectHumeWebSocket = () => {
+    return new Promise((resolve, reject) => {
+      // Hume WebSocket endpoint for streaming
+      const ws = new WebSocket(
+        `wss://api.hume.ai/v0/stream/models?apikey=${HUME_API_KEY}`
+      );
+
+      ws.onopen = () => {
+        console.log('✅ Connected to Hume AI WebSocket');
+
+        // Configure the models we want to use
+        const config = {
+          models: {
+            face: {
+              fps: 0.5, // Process 1 frame every 2 seconds to save costs
+              identify_faces: false,
+              min_face_size: 60
+            }
+          }
+        };
+
+        ws.send(JSON.stringify(config));
+        socketRef.current = ws;
+        resolve(ws);
+      };
+
+      ws.onerror = (error) => {
+        console.error('❌ Hume WebSocket Error:', error);
+        reject(new Error('Failed to connect to Hume AI'));
+      };
+
+      ws.onclose = (event) => {
+        console.log('🔌 Hume WebSocket closed:', event.code, event.reason);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const response = JSON.parse(event.data);
+
+          // Handle different response types
+          if (response.type === 'error') {
+            console.error('Hume API Error:', response);
+            return;
+          }
+
+          // Check for face predictions
+          if (response.face && response.face.predictions && response.face.predictions.length > 0) {
+            const prediction = response.face.predictions[0];
+            const emotions = prediction.emotions;
+
+            // Convert Hume emotion format to our format
+            const emotionData = {
+              timestamp: recordingTime,
+              joy: emotions.find(e => e.name === 'Joy')?.score || 0,
+              sadness: emotions.find(e => e.name === 'Sadness')?.score || 0,
+              anger: emotions.find(e => e.name === 'Anger')?.score || 0,
+              fear: emotions.find(e => e.name === 'Fear')?.score || 0,
+              surprise: emotions.find(e => e.name === 'Surprise')?.score || 0,
+              disgust: emotions.find(e => e.name === 'Disgust')?.score || 0,
+              neutral: emotions.find(e => e.name === 'Neutral')?.score || emotions.find(e => e.name === 'Calmness')?.score || 0
+            };
+
+            console.log('📊 Emotions received:', emotionData);
+
+            setCurrentEmotions(emotionData);
+            setSessionData(prev => [...prev, emotionData]);
+          }
+        } catch (err) {
+          console.error('Error parsing Hume response:', err);
+        }
+      };
+    });
+  };
+
+  const sendFrameToHume = () => {
+    if (!videoRef.current || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot send frame: WebSocket not ready');
+      return;
+    }
+
+    try {
+      // Create canvas and capture current video frame
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(videoRef.current, 0, 0);
+
+      // Convert to base64 JPEG
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          console.error('Failed to create blob from canvas');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result.split(',')[1];
+
+          if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            // Send frame data to Hume
+            const payload = {
+              data: base64data,
+              models: {
+                face: {}
+              }
+            };
+
+            socketRef.current.send(JSON.stringify(payload));
+            console.log('📤 Frame sent to Hume AI');
+          }
+        };
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', 0.7); // 70% quality to reduce bandwidth
+
+    } catch (error) {
+      console.error('Error capturing/sending frame:', error);
+    }
   };
 
   const startSession = async () => {
@@ -141,6 +244,20 @@ function App() {
       return;
     }
 
+    try {
+      await connectHumeWebSocket();
+      console.log('✅ Hume WebSocket connected successfully');
+    } catch (err) {
+      console.error('Failed to connect to Hume:', err);
+      setError('Failed to connect to Hume AI. Please check your API keys and internet connection.');
+      setIsRecording(false);
+      setIsPreparing(false);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      return;
+    }
+
     setIsRecording(true);
     setIsPreparing(false);
 
@@ -152,23 +269,10 @@ function App() {
       setRecordingTime(elapsedTime);
     }, 1000);
 
-    // Process frames every 3 seconds (to save API costs: 20 calls/min instead of 60)
+    // Send frames to Hume AI every 2 seconds (matches WebSocket config)
     frameIntervalRef.current = setInterval(() => {
-      const emotionData = generateMockEmotions(elapsedTime);
-      
-      setCurrentEmotions(emotionData);
-      setSessionData(prev => [...prev, emotionData]);
-
-      // TODO: Replace with actual Hume API call in production
-      // const frame = captureFrame();
-      // if (frame) {
-      //   analyzeFrameWithHume(frame).then(result => {
-      //     if (result) {
-      //       // Process Hume API response
-      //     }
-      //   });
-      // }
-    }, 3000);
+      sendFrameToHume();
+    }, 2000);
   };
 
   const stopSession = async () => {
@@ -337,124 +441,160 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
   };
 
   const downloadPDF = () => {
-    const doc = new jsPDF();
-    const stats = analyzeEmotions();
-    
-    // Title
-    doc.setFontSize(22);
-    doc.setTextColor(147, 51, 234); // Purple
-    doc.text('Emotion Expression Analysis Report', 20, 25);
-    
-    // Divider line
-    doc.setDrawColor(147, 51, 234);
-    doc.setLineWidth(0.5);
-    doc.line(20, 30, 190, 30);
-    
-    // Session info
-    doc.setFontSize(11);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`Session Duration: ${formatTime(recordingTime)}`, 20, 40);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 46);
-    doc.text(`Total Data Points: ${sessionData.length}`, 20, 52);
-    
-    // AI Summary Section
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text('AI-Generated Analysis', 20, 65);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(40, 40, 40);
-    const summaryLines = doc.splitTextToSize(summary, 170);
-    doc.text(summaryLines, 20, 73);
-    
-    // Calculate Y position after summary
-    let currentY = 73 + (summaryLines.length * 5) + 10;
-    
-    // Emotion Statistics
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Emotion Statistics', 20, currentY);
-    currentY += 8;
-    
-    doc.setFontSize(10);
-    doc.setTextColor(40, 40, 40);
-    
-    const statsData = [
-      ['Emotion', 'Average', 'Peak'],
-      ['Joy', `${(stats.avgJoy * 100).toFixed(1)}%`, `${(Math.max(...sessionData.map(e => e.joy)) * 100).toFixed(1)}%`],
-      ['Fear/Anxiety', `${(stats.avgFear * 100).toFixed(1)}%`, `${(Math.max(...sessionData.map(e => e.fear)) * 100).toFixed(1)}%`],
-      ['Sadness', `${(stats.avgSadness * 100).toFixed(1)}%`, `${(Math.max(...sessionData.map(e => e.sadness)) * 100).toFixed(1)}%`],
-      ['Surprise', `${(stats.avgSurprise * 100).toFixed(1)}%`, `${(Math.max(...sessionData.map(e => e.surprise)) * 100).toFixed(1)}%`],
-    ];
-    
-    doc.autoTable({
-      startY: currentY,
-      head: [statsData[0]],
-      body: statsData.slice(1),
-      theme: 'striped',
-      headStyles: { fillColor: [147, 51, 234] },
-      margin: { left: 20, right: 20 }
-    });
-    
-    currentY = doc.lastAutoTable.finalY + 10;
-    
-    // Key Insights
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Key Insights', 20, currentY);
-    currentY += 7;
-    
-    doc.setFontSize(10);
-    doc.text(`• Dominant Emotion: ${stats.dominant.charAt(0).toUpperCase() + stats.dominant.slice(1)}`, 25, currentY);
-    currentY += 6;
-    doc.text(`• Emotional Volatility: ${stats.volatility}`, 25, currentY);
-    currentY += 6;
-    doc.text(`• Session Quality: ${sessionData.length > 100 ? 'Excellent' : sessionData.length > 50 ? 'Good' : 'Moderate'} (${sessionData.length} data points)`, 25, currentY);
-    
-    // New page for detailed timeline
-    doc.addPage();
-    doc.setFontSize(16);
-    doc.setTextColor(147, 51, 234);
-    doc.text('Detailed Timeline', 20, 20);
-    
-    doc.setFontSize(9);
-    doc.setTextColor(40, 40, 40);
-    
-    const timelineData = sessionData
-      .filter((_, i) => i % Math.max(1, Math.floor(sessionData.length / 30)) === 0) // Sample data
-      .map(d => [
-        formatTime(d.timestamp),
-        `${(d.joy * 100).toFixed(0)}%`,
-        `${(d.fear * 100).toFixed(0)}%`,
-        `${(d.sadness * 100).toFixed(0)}%`,
-        `${(d.surprise * 100).toFixed(0)}%`
-      ]);
-    
-    doc.autoTable({
-      startY: 30,
-      head: [['Time', 'Joy', 'Fear', 'Sadness', 'Surprise']],
-      body: timelineData,
-      theme: 'grid',
-      headStyles: { fillColor: [147, 51, 234] },
-      styles: { fontSize: 8 },
-      margin: { left: 20, right: 20 }
-    });
-    
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text(
-        `Page ${i} of ${pageCount} | Generated by Emotion Tracker`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
+    try {
+      const doc = new jsPDF();
+      const stats = analyzeEmotions();
+
+      // Title
+      doc.setFontSize(22);
+      doc.setTextColor(147, 51, 234); // Purple
+      doc.text('Emotion Expression Analysis Report', 20, 25);
+
+      // Divider line
+      doc.setDrawColor(147, 51, 234);
+      doc.setLineWidth(0.5);
+      doc.line(20, 30, 190, 30);
+
+      // Session info
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Session Duration: ${formatTime(recordingTime)}`, 20, 40);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 46);
+      doc.text(`Total Data Points: ${sessionData.length}`, 20, 52);
+
+      // AI Summary Section
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text('AI-Generated Analysis', 20, 65);
+
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+      const summaryLines = doc.splitTextToSize(summary, 170);
+      doc.text(summaryLines, 20, 73);
+
+      // Calculate Y position after summary
+      let currentY = 73 + (summaryLines.length * 5) + 10;
+
+      // Emotion Statistics
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Emotion Statistics', 20, currentY);
+      currentY += 8;
+
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+
+      const statsData = [
+        ['Emotion', 'Average', 'Peak', 'Lowest'],
+        ['Joy',
+          `${(stats.avgJoy * 100).toFixed(1)}%`,
+          `${(Math.max(...sessionData.map(e => e.joy)) * 100).toFixed(1)}%`,
+          `${(Math.min(...sessionData.map(e => e.joy)) * 100).toFixed(1)}%`
+        ],
+        ['Fear/Anxiety',
+          `${(stats.avgFear * 100).toFixed(1)}%`,
+          `${(Math.max(...sessionData.map(e => e.fear)) * 100).toFixed(1)}%`,
+          `${(Math.min(...sessionData.map(e => e.fear)) * 100).toFixed(1)}%`
+        ],
+        ['Sadness',
+          `${(stats.avgSadness * 100).toFixed(1)}%`,
+          `${(Math.max(...sessionData.map(e => e.sadness)) * 100).toFixed(1)}%`,
+          `${(Math.min(...sessionData.map(e => e.sadness)) * 100).toFixed(1)}%`
+        ],
+        ['Surprise',
+          `${(stats.avgSurprise * 100).toFixed(1)}%`,
+          `${(Math.max(...sessionData.map(e => e.surprise)) * 100).toFixed(1)}%`,
+          `${(Math.min(...sessionData.map(e => e.surprise)) * 100).toFixed(1)}%`
+        ],
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [statsData[0]],
+        body: statsData.slice(1),
+        theme: 'striped',
+        headStyles: { fillColor: [147, 51, 234] },
+        margin: { left: 20, right: 20 }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 10;
+
+      // Key Insights
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Key Insights', 20, currentY);
+      currentY += 7;
+
+      doc.setFontSize(10);
+      doc.text(`• Dominant Emotion: ${stats.dominant.charAt(0).toUpperCase() + stats.dominant.slice(1)}`, 25, currentY);
+      currentY += 6;
+      doc.text(`• Emotional Volatility: ${stats.volatility}`, 25, currentY);
+      currentY += 6;
+      doc.text(`• Session Quality: ${sessionData.length > 100 ? 'Excellent' : sessionData.length > 50 ? 'Good' : 'Moderate'} (${sessionData.length} data points)`, 25, currentY);
+
+      // New page for detailed timeline
+      doc.addPage();
+      doc.setFontSize(16);
+      doc.setTextColor(147, 51, 234);
+      doc.text('Detailed Emotional Timeline', 20, 20);
+
+      doc.setFontSize(9);
+      doc.setTextColor(40, 40, 40);
+
+      // Sample every Nth data point to fit on page (max 35 rows per page)
+      const sampleRate = Math.max(1, Math.floor(sessionData.length / 35));
+      const timelineData = sessionData
+        .filter((_, i) => i % sampleRate === 0)
+        .map(d => [
+          formatTime(d.timestamp),
+          `${(d.joy * 100).toFixed(0)}%`,
+          `${(d.fear * 100).toFixed(0)}%`,
+          `${(d.sadness * 100).toFixed(0)}%`,
+          `${(d.surprise * 100).toFixed(0)}%`,
+          `${(d.anger * 100).toFixed(0)}%`
+        ]);
+
+      autoTable(doc, {
+        startY: 30,
+        head: [['Time', 'Joy', 'Fear', 'Sadness', 'Surprise', 'Anger']],
+        body: timelineData,
+        theme: 'grid',
+        headStyles: { fillColor: [147, 51, 234], fontSize: 9 },
+        styles: { fontSize: 8, cellPadding: 2 },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 25 }
+        }
+      });
+
+      // Footer on all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `Page ${i} of ${pageCount} | Generated by Emotion Expression Tracker`,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+
+      // Save with timestamp
+      const filename = `emotion-report-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
+      doc.save(filename);
+
+      console.log('PDF generated successfully:', filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please check console for details.');
     }
-    
-    doc.save(`emotion-report-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   const clearSession = () => {
@@ -641,7 +781,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
                   <div className="mt-4 p-3 bg-white/5 rounded-lg">
                     <p className="text-purple-300 text-xs">
-                      💡 Data updates every 3 seconds • {sessionData.length} data points collected
+                      💡 Data updates every 2 seconds • {sessionData.length} data points collected
                     </p>
                   </div>
                 </div>
