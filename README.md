@@ -1,8 +1,8 @@
-# 🎭 Emotion Expression Tracker
+# 😵 Emotion Expression Tracker
 
-> Real-time facial emotion analysis in the browser — no backend, all AI, zero fluff.
+> Real-time facial emotion analysis in the browser, no backend, powered by hume + gemini.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?logo=vercel)](https://your-app-url.vercel.app)
+[![Deployed on Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?logo=vercel)](https://emotion-tracker-gules.vercel.app/)
 [![Built with React + Vite](https://img.shields.io/badge/React%20+%20Vite-61DAFB?logo=react)](https://vitejs.dev)
 
 ---
