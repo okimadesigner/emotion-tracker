@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Square, Download, Trash2, Activity, AlertCircle } from 'lucide-react';
+import { Camera, Square, Download, Plus, Activity, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -27,6 +27,9 @@ function App() {
   const timerRef = useRef(null);
   const frameIntervalRef = useRef(null);
   const socketRef = useRef(null);
+
+  // 1. ADD THIS REF at the top of your App component (with other refs)
+  const sessionStartTimeRef = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -158,9 +161,13 @@ function App() {
             const prediction = response.face.predictions[0];
             const emotions = prediction.emotions;
 
-            // Convert Hume emotion format to our format
+            // FIX: Calculate elapsed time from session start
+            const elapsedSeconds = sessionStartTimeRef.current
+              ? Math.floor((Date.now() - sessionStartTimeRef.current) / 1000)
+              : 0;
+
             const emotionData = {
-              timestamp: recordingTime,
+              timestamp: elapsedSeconds,  // Now this will be accurate!
               joy: emotions.find(e => e.name === 'Joy')?.score || 0,
               sadness: emotions.find(e => e.name === 'Sadness')?.score || 0,
               anger: emotions.find(e => e.name === 'Anger')?.score || 0,
@@ -170,7 +177,7 @@ function App() {
               neutral: emotions.find(e => e.name === 'Neutral')?.score || emotions.find(e => e.name === 'Calmness')?.score || 0
             };
 
-            console.log('📊 Emotions received:', emotionData);
+            console.log(`📊 Emotions at ${elapsedSeconds}s:`, emotionData);
 
             setCurrentEmotions(emotionData);
             setSessionData(prev => [...prev, emotionData]);
@@ -244,6 +251,21 @@ function App() {
       return;
     }
 
+    setIsRecording(true);
+    setIsPreparing(false);
+
+    // FIX: Track session start time
+    sessionStartTimeRef.current = Date.now();
+
+    let elapsedTime = 0;
+
+    // Start recording timer
+    timerRef.current = setInterval(() => {
+      elapsedTime += 1;
+      setRecordingTime(elapsedTime);
+    }, 1000);
+
+    // Connect to Hume WebSocket
     try {
       await connectHumeWebSocket();
       console.log('✅ Hume WebSocket connected successfully');
@@ -258,18 +280,7 @@ function App() {
       return;
     }
 
-    setIsRecording(true);
-    setIsPreparing(false);
-
-    let elapsedTime = 0;
-
-    // Start recording timer
-    timerRef.current = setInterval(() => {
-      elapsedTime += 1;
-      setRecordingTime(elapsedTime);
-    }, 1000);
-
-    // Send frames to Hume AI every 2 seconds (matches WebSocket config)
+    // Send frames to Hume every 2 seconds
     frameIntervalRef.current = setInterval(() => {
       sendFrameToHume();
     }, 2000);
@@ -910,7 +921,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 onClick={clearSession}
                 className="bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2 border border-white/20"
               >
-                <Trash2 className="w-5 h-5" />
+                <Plus className="w-5 h-5" />
                 New Session
               </button>
             </div>
