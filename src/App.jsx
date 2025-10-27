@@ -3,6 +3,7 @@ import { Camera, Square, Download, Plus, Activity, AlertCircle } from 'lucide-re
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 // API Keys from environment variables
 const HUME_API_KEY = import.meta.env.VITE_HUME_API_KEY;
@@ -21,6 +22,8 @@ function App() {
   const [showResults, setShowResults] = useState(false);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
+  const [participantName, setParticipantName] = useState('');
+  const [sessionNotes, setSessionNotes] = useState('');
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -451,7 +454,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     try {
       const doc = new jsPDF();
       const stats = analyzeEmotions();
@@ -469,9 +472,10 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       // Session info
       doc.setFontSize(11);
       doc.setTextColor(60, 60, 60);
-      doc.text(`Session Duration: ${formatTime(recordingTime)}`, 20, 40);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 46);
-      doc.text(`Total Data Points: ${sessionData.length}`, 20, 52);
+      doc.text(`Participant: ${participantName || 'Anonymous'}`, 20, 40);
+      doc.text(`Session Duration: ${formatTime(recordingTime)}`, 20, 46);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 52);
+      doc.text(`Total Data Points: ${sessionData.length}`, 20, 58);
 
       // AI Summary Section
       doc.setFontSize(14);
@@ -485,6 +489,33 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
       // Calculate Y position after summary
       let currentY = 73 + (summaryLines.length * 5) + 10;
+
+      // Session Notes Section (if notes exist)
+      if (sessionNotes) {
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Session Notes', 20, currentY);
+        currentY += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(40, 40, 40);
+        const notesLines = doc.splitTextToSize(sessionNotes, 170);
+        doc.text(notesLines, 20, currentY);
+        currentY += (notesLines.length * 5) + 10;
+      }
+
+      // Capture chart as image
+      const chartElement = document.querySelector('.recharts-wrapper');
+      if (chartElement) {
+        try {
+          const canvas = await html2canvas(chartElement);
+          const chartImage = canvas.toDataURL('image/png');
+          doc.addImage(chartImage, 'PNG', 20, currentY, 170, 80);
+          currentY += 90;
+        } catch (chartError) {
+          console.error('Error capturing chart:', chartError);
+        }
+      }
 
       // Emotion Statistics
       doc.setFontSize(14);
@@ -615,6 +646,8 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
     setSummary('');
     setRecordingTime(0);
     setError('');
+    setParticipantName('');
+    setSessionNotes('');
   };
 
   const getEmotionColor = (emotion, value) => {
@@ -709,15 +742,24 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 )}
               </div>
 
-              <div className="flex gap-3">
+              <div className="space-y-4">
                 {!isRecording && !isPreparing && (
-                  <button
-                    onClick={startSession}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <Camera className="w-5 h-5" />
-                    Start Session
-                  </button>
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Participant Name (optional)"
+                      value={participantName}
+                      onChange={(e) => setParticipantName(e.target.value)}
+                      className="w-full bg-white/10 text-white px-4 py-2 rounded-lg border border-white/20 placeholder-white/50"
+                    />
+                    <button
+                      onClick={startSession}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <Camera className="w-5 h-5" />
+                      Start Session
+                    </button>
+                  </>
                 )}
                 {isPreparing && (
                   <button 
@@ -867,6 +909,20 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+
+            {/* Session Notes */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                📝 Session Notes
+              </h2>
+              <textarea
+                placeholder="Add session notes..."
+                value={sessionNotes}
+                onChange={(e) => setSessionNotes(e.target.value)}
+                className="w-full bg-white/10 text-white px-4 py-3 rounded-lg border border-white/20 placeholder-white/50 resize-none"
+                rows="3"
+              />
             </div>
 
             {/* Summary */}
