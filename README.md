@@ -1,16 +1,38 @@
-# React + Vite
+# 😵 Emotion Expression Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Real-time facial emotion analysis in the browser, no backend, powered by hume + gemini.
 
-Currently, two official plugins are available:
+[![Deployed on Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?logo=vercel)](https://emotion-tracker-gules.vercel.app/)
+[![Built with React + Vite](https://img.shields.io/badge/React%20+%20Vite-61DAFB?logo=react)](https://vitejs.dev)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+### ✨ Features
+- 📹 **Webcam capture** with real-time frame streaming  
+- 🤖 **Emotion detection** via [Hume AI](https://hume.ai) (28+ emotions, WebSocket)  
+- 📊 **Interactive timeline** with Recharts  
+- 🧠 **AI narrative summary** powered by **Gemini Pro**  
+- 📄 **One-click PDF report** (jsPDF + autotable)  
+- 🎨 **Glassmorphic UI** with Tailwind CSS  
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+### ⚡ Tech Stack
+- **Frontend**: React 18 + Vite  
+- **Styling**: Tailwind CSS (`backdrop-blur`, gradients)  
+- **Icons**: Lucide React  
+- **Charts**: Recharts  
+- **PDF**: jsPDF + jspdf-autotable  
+- **AI**: Hume AI (vision) + Google Gemini Pro (text)  
+- **Hosting**: Vercel (free tier, auto-deploy)  
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+### 🌐 How It Works
+1. User grants webcam access  
+2. Frames sent to Hume AI every 2s via WebSocket  
+3. Emotion scores update live chart  
+4. On stop → Gemini summarizes emotions  
+5. PDF report generated & downloaded — **all client-side**
+
+> 🔒 **Privacy-first**: Video never leaves the browser. API keys secured via Vercel env vars.
