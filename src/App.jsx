@@ -5,10 +5,85 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
-// API Keys from environment variables
-const HUME_API_KEY = import.meta.env.VITE_HUME_API_KEY;
-const HUME_SECRET_KEY = import.meta.env.VITE_HUME_SECRET_KEY;
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+// Optimized REST-only setup
+const HUME_API_KEYS = [
+  import.meta.env.VITE_HUME_API_KEY_1,
+  import.meta.env.VITE_HUME_API_KEY_2,
+  import.meta.env.VITE_HUME_API_KEY_3,
+  import.meta.env.VITE_HUME_API_KEY_4,
+  import.meta.env.VITE_HUME_API_KEY_5,
+  import.meta.env.VITE_HUME_API_KEY_6,
+  import.meta.env.VITE_HUME_API_KEY_7,
+  import.meta.env.VITE_HUME_API_KEY_8,
+  import.meta.env.VITE_HUME_API_KEY_9,
+  import.meta.env.VITE_HUME_API_KEY_10,
+].filter(key => key);
+
+const GEMINI_API_KEYS = [
+  import.meta.env.VITE_GEMINI_API_KEY_1,
+  import.meta.env.VITE_GEMINI_API_KEY_2,
+  import.meta.env.VITE_GEMINI_API_KEY_3,
+].filter(key => key);
+
+let currentHumeKeyIndex = 0;
+let currentGeminiKeyIndex = 0;
+let globalCallCount = 0; // Development tracking
+
+// Memory-safe session management
+const MAX_SESSION_POINTS = 800; // ~20 minutes at 1.5s intervals
+
+// Simple REST-based emotion analysis with rotation
+const analyzeWithRotatingKey = async (frameData) => {
+  const key = HUME_API_KEYS[currentHumeKeyIndex];
+
+  try {
+    const response = await fetch('https://api.hume.ai/v0/batch/jobs', {
+      method: 'POST',
+      headers: {
+        'X-Hume-Api-Key': key,
+      },
+      body: frameData
+    });
+
+    if (response.status === 402 || response.status === 429) {
+      // Rotate key and retry once on quota errors
+      currentHumeKeyIndex = (currentHumeKeyIndex + 1) % HUME_API_KEYS.length;
+      console.log(`🔄 Rotated to Hume Key #${currentHumeKeyIndex + 1} (${response.status})`);
+      return analyzeWithRotatingKey(frameData); // Retry with new key
+    }
+
+    if (!response.ok) {
+      console.warn(`Hume API error: ${response.status}`);
+      return null;
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Hume] Key ${currentHumeKeyIndex + 1}, Call #${++globalCallCount}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Hume API network error:', error);
+    return null;
+  }
+};
+
+// Memory-safe emotion data addition
+const addEmotionPoint = (emotionData, setSessionData) => {
+  setSessionData(prev => {
+    const updated = [...prev, emotionData];
+    return updated.length > MAX_SESSION_POINTS
+      ? updated.slice(-MAX_SESSION_POINTS)
+      : updated;
+  });
+};
+
+// Smart AI summary triggering
+const shouldTriggerAISummary = (sessionData, recordingTime, aiEnabled = true) => {
+  return aiEnabled &&
+         sessionData.length >= 20 &&
+         recordingTime >= 120; // 2+ minutes
+};
 
 function App() {
   const [isRecording, setIsRecording] = useState(false);
@@ -68,175 +143,68 @@ function App() {
     }
   };
 
-  const analyzeFrameWithHume = async (imageData) => {
-    try {
-      // Convert base64 to blob
-      const base64Response = await fetch(imageData);
-      const blob = await base64Response.blob();
-      
-      // Create FormData
-      const formData = new FormData();
-      formData.append('file', blob, 'frame.jpg');
-      formData.append('models', JSON.stringify({ face: {} }));
-
-      // Call Hume API
-      const response = await fetch('https://api.hume.ai/v0/batch/jobs', {
-        method: 'POST',
-        headers: {
-          'X-Hume-Api-Key': HUME_API_KEY,
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`Hume API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (err) {
-      console.error('Error analyzing frame:', err);
-      return null;
-    }
-  };
-
-  const captureFrame = () => {
-    if (!videoRef.current) return null;
-
+  // Optimized frame capture and analysis
+  const captureFrameAsFormData = (videoElement) => {
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(videoRef.current, 0, 0);
-    
-    return canvas.toDataURL('image/jpeg', 0.8);
-  };
+    ctx.drawImage(videoElement, 0, 0);
 
-
-
-  const connectHumeWebSocket = () => {
-    return new Promise((resolve, reject) => {
-      // Hume WebSocket endpoint for streaming
-      const ws = new WebSocket(
-        `wss://api.hume.ai/v0/stream/models?apikey=${HUME_API_KEY}`
-      );
-
-      ws.onopen = () => {
-        console.log('✅ Connected to Hume AI WebSocket');
-
-        // Configure the models we want to use
-        const config = {
-          models: {
-            face: {
-              fps: 0.5, // Process 1 frame every 2 seconds to save costs
-              identify_faces: false,
-              min_face_size: 60
-            }
-          }
-        };
-
-        ws.send(JSON.stringify(config));
-        socketRef.current = ws;
-        resolve(ws);
-      };
-
-      ws.onerror = (error) => {
-        console.error('❌ Hume WebSocket Error:', error);
-        reject(new Error('Failed to connect to Hume AI'));
-      };
-
-      ws.onclose = (event) => {
-        console.log('🔌 Hume WebSocket closed:', event.code, event.reason);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const response = JSON.parse(event.data);
-
-          // Handle different response types
-          if (response.type === 'error') {
-            console.error('Hume API Error:', response);
-            return;
-          }
-
-          // Check for face predictions
-          if (response.face && response.face.predictions && response.face.predictions.length > 0) {
-            const prediction = response.face.predictions[0];
-            const emotions = prediction.emotions;
-
-            // FIX: Calculate elapsed time from session start
-            const elapsedSeconds = sessionStartTimeRef.current
-              ? Math.floor((Date.now() - sessionStartTimeRef.current) / 1000)
-              : 0;
-
-            const emotionData = {
-              timestamp: elapsedSeconds,  // Now this will be accurate!
-              joy: emotions.find(e => e.name === 'Joy')?.score || 0,
-              sadness: emotions.find(e => e.name === 'Sadness')?.score || 0,
-              anger: emotions.find(e => e.name === 'Anger')?.score || 0,
-              fear: emotions.find(e => e.name === 'Fear')?.score || 0,
-              surprise: emotions.find(e => e.name === 'Surprise')?.score || 0,
-              disgust: emotions.find(e => e.name === 'Disgust')?.score || 0,
-              neutral: emotions.find(e => e.name === 'Neutral')?.score || emotions.find(e => e.name === 'Calmness')?.score || 0
-            };
-
-            console.log(`📊 Emotions at ${elapsedSeconds}s:`, emotionData);
-
-            setCurrentEmotions(emotionData);
-            setSessionData(prev => [...prev, emotionData]);
-          }
-        } catch (err) {
-          console.error('Error parsing Hume response:', err);
-        }
-      };
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        const formData = new FormData();
+        formData.append('file', blob, 'frame.jpg');
+        formData.append('models', JSON.stringify({ face: {} }));
+        resolve(formData);
+      }, 'image/jpeg', 0.7); // 70% quality for bandwidth optimization
     });
   };
 
-  const sendFrameToHume = () => {
-    if (!videoRef.current || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      console.warn('Cannot send frame: WebSocket not ready');
-      return;
-    }
+  // Optimized emotion capture loop
+  const startEmotionCapture = async () => {
+    let isRunning = true;
 
-    try {
-      // Create canvas and capture current video frame
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
+    const captureLoop = async () => {
+      if (!isRunning || !videoRef.current) return;
 
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoRef.current, 0, 0);
+      try {
+        const frameData = await captureFrameAsFormData(videoRef.current);
+        const result = await analyzeWithRotatingKey(frameData);
 
-      // Convert to base64 JPEG
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          console.error('Failed to create blob from canvas');
-          return;
+        if (result?.predictions?.[0]?.emotions) {
+          const emotions = result.predictions[0].emotions;
+          const elapsedSeconds = sessionStartTimeRef.current
+            ? Math.floor((Date.now() - sessionStartTimeRef.current) / 1000)
+            : 0;
+
+          const emotionData = {
+            timestamp: elapsedSeconds,
+            joy: emotions.find(e => e.name === 'Joy')?.score || 0,
+            sadness: emotions.find(e => e.name === 'Sadness')?.score || 0,
+            anger: emotions.find(e => e.name === 'Anger')?.score || 0,
+            fear: emotions.find(e => e.name === 'Fear')?.score || 0,
+            surprise: emotions.find(e => e.name === 'Surprise')?.score || 0,
+            disgust: emotions.find(e => e.name === 'Disgust')?.score || 0,
+            neutral: emotions.find(e => e.name === 'Neutral')?.score || 0
+          };
+
+          addEmotionPoint(emotionData, setSessionData);
+          setCurrentEmotions(emotionData);
         }
+      } catch (error) {
+        console.error('Capture loop error:', error);
+      }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64data = reader.result.split(',')[1];
+      // Continue loop every 1.5 seconds
+      setTimeout(captureLoop, 1500);
+    };
 
-          if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-            // Send frame data to Hume
-            const payload = {
-              data: base64data,
-              models: {
-                face: {}
-              }
-            };
+    captureLoop();
 
-            socketRef.current.send(JSON.stringify(payload));
-            console.log('📤 Frame sent to Hume AI');
-          }
-        };
-        reader.readAsDataURL(blob);
-      }, 'image/jpeg', 0.7); // 70% quality to reduce bandwidth
-
-    } catch (error) {
-      console.error('Error capturing/sending frame:', error);
-    }
+    // Return cleanup function
+    return () => { isRunning = false; };
   };
 
   const startSession = async () => {
@@ -257,7 +225,7 @@ function App() {
     setIsRecording(true);
     setIsPreparing(false);
 
-    // FIX: Track session start time
+    // Track session start time
     sessionStartTimeRef.current = Date.now();
 
     let elapsedTime = 0;
@@ -268,13 +236,16 @@ function App() {
       setRecordingTime(elapsedTime);
     }, 1000);
 
-    // Connect to Hume WebSocket
+    // Start optimized emotion capture loop
     try {
-      await connectHumeWebSocket();
-      console.log('✅ Hume WebSocket connected successfully');
+      const cleanupCapture = await startEmotionCapture();
+      console.log('✅ Emotion capture started successfully');
+
+      // Store cleanup function for later
+      frameIntervalRef.current = { cleanup: cleanupCapture };
     } catch (err) {
-      console.error('Failed to connect to Hume:', err);
-      setError('Failed to connect to Hume AI. Please check your API keys and internet connection.');
+      console.error('Failed to start emotion capture:', err);
+      setError('Failed to start emotion analysis. Please check your API keys and internet connection.');
       setIsRecording(false);
       setIsPreparing(false);
       if (streamRef.current) {
@@ -282,11 +253,6 @@ function App() {
       }
       return;
     }
-
-    // Send frames to Hume every 2 seconds
-    frameIntervalRef.current = setInterval(() => {
-      sendFrameToHume();
-    }, 2000);
   };
 
   const stopSession = async () => {
@@ -294,9 +260,11 @@ function App() {
     setIsProcessing(true);
     setProcessingStep('Finalizing emotion data...');
 
-    // Clear intervals
+    // Clear intervals and cleanup
     if (timerRef.current) clearInterval(timerRef.current);
-    if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+    if (frameIntervalRef.current?.cleanup) {
+      frameIntervalRef.current.cleanup(); // Stop the capture loop
+    }
 
     // Stop camera
     if (streamRef.current) {
@@ -306,9 +274,13 @@ function App() {
     // Wait a bit for UI feedback
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Generate AI summary
-    setProcessingStep('Generating AI summary...');
-    await generateSummary();
+    // Generate AI summary only for meaningful sessions
+    if (shouldTriggerAISummary(sessionData, recordingTime)) {
+      setProcessingStep('Generating AI summary...');
+      await generateSummary();
+    } else {
+      setSummary(`Session completed with ${sessionData.length} emotion data points collected over ${formatTime(recordingTime)}. AI analysis skipped for short sessions.`);
+    }
 
     setProcessingStep('');
     setIsProcessing(false);
@@ -347,27 +319,48 @@ Paragraph 3: Provide an overall assessment of the emotional journey, patterns ob
 
 Use professional yet warm language. Be specific with timestamps. Write in a flowing narrative style.`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1000,
-            }
-          })
-        }
-      );
+      // Try Gemini keys with rotation
+      let response;
+      let lastError;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Gemini API Error:', response.status, errorData);
-        throw new Error(`API Error: ${response.status}`);
+      for (let attempt = 0; attempt < GEMINI_API_KEYS.length; attempt++) {
+        const geminiKey = getNextGeminiKey();
+        console.log(`🤖 Trying Gemini Key #${currentGeminiKeyIndex} (attempt ${attempt + 1})`);
+
+        try {
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiKey}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                  temperature: 0.7,
+                  maxOutputTokens: 1000,
+                }
+              })
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`Gemini Key #${currentGeminiKeyIndex} failed:`, response.status, errorData);
+            lastError = new Error(`API Error: ${response.status}`);
+            continue; // Try next key
+          }
+
+          // If we got here, it worked!
+          break;
+        } catch (err) {
+          console.error(`Gemini Key #${currentGeminiKeyIndex} error:`, err);
+          lastError = err;
+          if (attempt === GEMINI_API_KEYS.length - 1) {
+            throw lastError; // All keys failed
+          }
+        }
       }
 
       const data = await response.json();
@@ -834,7 +827,10 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
                   <div className="mt-4 p-3 bg-white/5 rounded-lg">
                     <p className="text-purple-300 text-xs">
-                      💡 Data updates every 2 seconds • {sessionData.length} data points collected
+                      💡 Data updates every 1.5 seconds • {sessionData.length} data points collected
+                    </p>
+                    <p className="text-purple-400 text-xs mt-1">
+                      🔑 Using Hume Key #{currentHumeKeyIndex + 1} of {HUME_API_KEYS.length} available
                     </p>
                   </div>
                 </div>
