@@ -728,14 +728,17 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         }
       }
 
-      // Emotion Statistics
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Emotion Statistics', 20, currentY);
-      currentY += 8;
+      // Check if we need a new page for the table
+      if (currentY > 200) {
+        doc.addPage();
+        currentY = 20;
+      }
 
-      doc.setFontSize(10);
-      doc.setTextColor(40, 40, 40);
+      // Emotion Statistics Title
+      doc.setFontSize(14);
+      doc.setTextColor(151, 20, 77); // New color #97144D
+      doc.text('Emotion Statistics', 20, currentY);
+      currentY += 10;
 
       const statsData = [
         ['Emotion', 'Average', 'Peak', 'Lowest'],
@@ -766,76 +769,129 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         head: [statsData[0]],
         body: statsData.slice(1),
         theme: 'striped',
-        headStyles: { fillColor: [147, 51, 234] },
+        headStyles: { fillColor: [151, 20, 77] }, // New color #97144D
         margin: { left: 20, right: 20 }
       });
 
-      currentY = doc.lastAutoTable.finalY + 10;
+      currentY = doc.lastAutoTable.finalY + 15;
 
-      // Key Insights
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
+      // Key Insights (move up to fill space)
+      doc.setFontSize(14);
+      doc.setTextColor(151, 20, 77); // New color
       doc.text('Key Insights', 20, currentY);
-      currentY += 7;
+      currentY += 8;
 
       doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
       doc.text(`• Dominant Emotion: ${stats.dominant.charAt(0).toUpperCase() + stats.dominant.slice(1)}`, 25, currentY);
       currentY += 6;
       doc.text(`• Emotional Volatility: ${stats.volatility}`, 25, currentY);
       currentY += 6;
       doc.text(`• Session Quality: ${sessionData.length > 100 ? 'Excellent' : sessionData.length > 50 ? 'Good' : 'Moderate'} (${sessionData.length} data points)`, 25, currentY);
+      currentY += 15;
 
-      // New page for detailed timeline
-      doc.addPage();
-      doc.setFontSize(16);
-      doc.setTextColor(147, 51, 234);
-      doc.text('Detailed Emotional Timeline', 20, 20);
+      // Check if we can fit timeline on same page
+      if (currentY < 220) {
+        // Add timeline on same page
+        doc.setFontSize(14);
+        doc.setTextColor(151, 20, 77);
+        doc.text('Detailed Emotional Timeline', 20, currentY);
+        currentY += 8;
 
-      doc.setFontSize(9);
-      doc.setTextColor(40, 40, 40);
+        // Sample data to fit remaining space
+        const maxRows = Math.floor((280 - currentY) / 6); // Calculate available rows
+        const sampleRate = Math.max(1, Math.floor(sessionData.length / maxRows));
 
-      // Sample every Nth data point to fit on page (max 35 rows per page)
-      const sampleRate = Math.max(1, Math.floor(sessionData.length / 35));
-      const timelineData = sessionData
-        .filter((_, i) => i % sampleRate === 0)
-        .map(d => [
-          formatTime(d.timestamp),
-          `${(d.joy * 100).toFixed(0)}%`,
-          `${(d.fear * 100).toFixed(0)}%`,
-          `${(d.sadness * 100).toFixed(0)}%`,
-          `${(d.disgust * 100).toFixed(0)}%`,
-          `${(d.anger * 100).toFixed(0)}%`
-        ]);
+        const timelineData = sessionData
+          .filter((_, i) => i % sampleRate === 0)
+          .slice(0, maxRows) // Limit rows
+          .map(d => [
+            formatTime(d.timestamp),
+            `${(d.joy * 100).toFixed(0)}%`,
+            `${(d.fear * 100).toFixed(0)}%`,
+            `${(d.sadness * 100).toFixed(0)}%`,
+            `${(d.disgust * 100).toFixed(0)}%`,
+            `${(d.anger * 100).toFixed(0)}%`
+          ]);
 
-      autoTable(doc, {
-        startY: 30,
-        head: [['Time', 'Joy', 'Fear', 'Sadness', 'Disgust', 'Anger']],
-        body: timelineData,
-        theme: 'grid',
-        headStyles: { fillColor: [147, 51, 234], fontSize: 9 },
-        styles: { fontSize: 8, cellPadding: 2 },
-        margin: { left: 15, right: 15 },
-        columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 30 }
-        }
-      });
+        autoTable(doc, {
+          startY: currentY,
+          head: [['Time', 'Joy', 'Fear', 'Sadness', 'Disgust', 'Anger']],
+          body: timelineData,
+          theme: 'grid',
+          headStyles: { fillColor: [151, 20, 77], fontSize: 9 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          margin: { left: 20, right: 20 },
+          columnStyles: {
+            0: { cellWidth: 20 },
+            1: { cellWidth: 26 },
+            2: { cellWidth: 26 },
+            3: { cellWidth: 26 },
+            4: { cellWidth: 26 },
+            5: { cellWidth: 26 }
+          }
+        });
+      } else {
+        // New page for timeline
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.setTextColor(151, 20, 77);
+        doc.text('Detailed Emotional Timeline', 20, 20);
+
+        // Full timeline on new page
+        const sampleRate = Math.max(1, Math.floor(sessionData.length / 40));
+        const timelineData = sessionData
+          .filter((_, i) => i % sampleRate === 0)
+          .map(d => [
+            formatTime(d.timestamp),
+            `${(d.joy * 100).toFixed(0)}%`,
+            `${(d.fear * 100).toFixed(0)}%`,
+            `${(d.sadness * 100).toFixed(0)}%`,
+            `${(d.disgust * 100).toFixed(0)}%`,
+            `${(d.anger * 100).toFixed(0)}%`
+          ]);
+
+        autoTable(doc, {
+          startY: 28,
+          head: [['Time', 'Joy', 'Fear', 'Sadness', 'Disgust', 'Anger']],
+          body: timelineData,
+          theme: 'grid',
+          headStyles: { fillColor: [151, 20, 77], fontSize: 9 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          margin: { left: 20, right: 20 },
+          columnStyles: {
+            0: { cellWidth: 20 },
+            1: { cellWidth: 26 },
+            2: { cellWidth: 26 },
+            3: { cellWidth: 26 },
+            4: { cellWidth: 26 },
+            5: { cellWidth: 26 }
+          }
+        });
+      }
 
       // Footer on all pages
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+
+        // Bottom border line
+        doc.setDrawColor(151, 20, 77);
+        doc.setLineWidth(0.3);
+        doc.line(20, doc.internal.pageSize.height - 15, 190, doc.internal.pageSize.height - 15);
+
         doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
+        doc.setTextColor(100, 100, 100);
+
+        // Left: Page number
+        doc.text(`Page ${i} of ${pageCount}`, 20, doc.internal.pageSize.height - 8);
+
+        // Right: Generated by
         doc.text(
-          `Page ${i} of ${pageCount} | Generated by Emotion Expression Tracker`,
-          doc.internal.pageSize.width / 2,
-          doc.internal.pageSize.height - 10,
-          { align: 'center' }
+          'Emotion Expression Tracker',
+          doc.internal.pageSize.width - 20,
+          doc.internal.pageSize.height - 8,
+          { align: 'right' }
         );
       }
 
