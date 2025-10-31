@@ -880,7 +880,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       <select
                         value={selectedCameraId || ''}
                         onChange={(e) => setSelectedCameraId(e.target.value)}
-                        className="w-full bg-white/20 text-gray-800 py-2 pl-4 pr-4 rounded-lg border border-white/30"
+                        className="w-full bg-white/10 text-white py-2 pl-4 pr-4 rounded-lg border border-white/20"
                       >
                         {cameraDevices.length === 0 ? (
                           <option>Detecting cameras...</option>
