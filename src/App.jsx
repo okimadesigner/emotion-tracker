@@ -602,7 +602,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         avgFear: 0,
         avgSadness: 0,
         avgAnger: 0,
-        avgSurprise: 0,
+        avgDisgust: 0,
         dominant: 'none',
         keyMoments: 'No emotional data collected',
         volatility: 'N/A'
@@ -620,7 +620,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       fear: avgFear,
       sadness: avgSadness,
       anger: avgAnger,
-      surprise: avgSurprise
+      disgust: avgDisgust
     };
     const dominant = Object.keys(emotionTypes).reduce((a, b) =>
       emotionTypes[a] > emotionTypes[b] ? a : b
@@ -867,7 +867,6 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       fear: '#f87171',
       sadness: '#60a5fa',
       anger: '#fb923c',
-      surprise: '#fbbf24',
       disgust: '#34d399',
       neutral: '#94a3b8'
     };
@@ -876,11 +875,11 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
   const getInsightText = () => {
     if (!currentEmotions) return 'Waiting for data...';
-    
+
     if (currentEmotions.joy > 0.6) return '🎉 High positive engagement detected!';
     if (currentEmotions.fear > 0.5) return '😰 Elevated stress levels observed';
-    if (currentEmotions.surprise > 0.5) return '😮 Strong surprise reaction detected';
     if (currentEmotions.sadness > 0.4) return '😔 Lower mood indicators present';
+    if (currentEmotions.disgust > 0.4) return '😖 Discomfort indicators present';
     return '😐 Neutral emotional state';
   };
 
