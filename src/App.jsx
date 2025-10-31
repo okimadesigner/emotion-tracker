@@ -68,6 +68,83 @@ const canRotateKey = () => {
   return true;
 };
 
+// WebSocket-based emotion analysis (browser-compatible)
+const analyzeWithWebSocket = (frameData) => {
+  return new Promise((resolve) => {
+    const key = HUME_API_KEYS[currentHumeKeyIndex];
+    const startTime = Date.now();
+
+    // Create WebSocket connection
+    const ws = new WebSocket(`wss://api.hume.ai/v0/stream/models?apikey=${key}`);
+
+    let hasResponse = false;
+
+    ws.onopen = () => {
+      // Send frame data through WebSocket
+      ws.send(JSON.stringify({
+        models: {
+          face: {}
+        },
+        raw_text: false,
+        data: frameData
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      if (hasResponse) return; // Only process first response
+      hasResponse = true;
+
+      try {
+        const data = JSON.parse(event.data);
+        perfMonitor.trackHume(Date.now() - startTime);
+
+        // Parse WebSocket response format
+        const emotions =
+          data?.face?.predictions?.[0]?.emotions ||
+          data?.predictions?.[0]?.emotions ||
+          null;
+
+        if (emotions) {
+          resolve({ predictions: [{ emotions }] });
+        } else {
+          console.warn('❌ No emotions in WebSocket response:', data);
+          resolve(null);
+        }
+      } catch (err) {
+        console.error('WebSocket parse error:', err);
+        resolve(null);
+      }
+
+      ws.close();
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+
+      // Try rotating key on error
+      if (!canRotateKey()) {
+        resolve(null);
+        return;
+      }
+
+      currentHumeKeyIndex = (currentHumeKeyIndex + 1) % HUME_API_KEYS.length;
+      console.log(`🔄 Rotated to Hume Key #${currentHumeKeyIndex + 1} (WebSocket error)`);
+
+      ws.close();
+      resolve(null);
+    };
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      if (!hasResponse) {
+        console.warn('⏱️ WebSocket timeout');
+        ws.close();
+        resolve(null);
+      }
+    }, 5000);
+  });
+};
+
 // Memory-safe session management
 const MAX_SESSION_POINTS = 800; // ~20 minutes at 1.5s intervals
 
