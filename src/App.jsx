@@ -109,17 +109,23 @@ const analyzeWithRotatingKey = async (frameData) => {
 
     perfMonitor.trackHume(Date.now() - startTime); // ADD THIS
 
-    // ADD VALIDATION:
-    if (!Array.isArray(data?.predictions) || !data.predictions[0]?.emotions) {
-      console.warn('Invalid Hume response format:', data);
+    // DEBUG: Log the actual structure
+    console.log('🔍 Hume Response Structure:', JSON.stringify(data, null, 2));
+
+    // Try multiple possible response formats
+    const emotions =
+      data?.predictions?.[0]?.emotions ||           // Format 1
+      data?.face?.predictions?.[0]?.emotions ||     // Format 2
+      data?.[0]?.results?.predictions?.[0]?.emotions || // Format 3
+      null;
+
+    if (!emotions) {
+      console.warn('❌ No emotions found in Hume response:', data);
       return null;
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Hume] Key ${currentHumeKeyIndex + 1}, Call #${++globalCallCount}, Time: ${Date.now() - startTime}ms, Avg: ${perfMonitor.getAverageHumeTime()}ms`);
-    }
-
-    return data;
+    // Return in expected format
+    return { predictions: [{ emotions }] };
   } catch (error) {
     console.error('Hume API network error:', error);
     return null;
