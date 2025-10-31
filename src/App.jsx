@@ -349,9 +349,7 @@ function App() {
             sadness: emotions.find(e => e.name === 'Sadness')?.score || 0,
             anger: emotions.find(e => e.name === 'Anger')?.score || 0,
             fear: emotions.find(e => e.name === 'Fear')?.score || 0,
-            surprise: emotions.find(e => e.name === 'Surprise')?.score || 0,
-            disgust: emotions.find(e => e.name === 'Disgust')?.score || 0,
-            neutral: emotions.find(e => e.name === 'Neutral')?.score || 0
+            disgust: emotions.find(e => e.name === 'Disgust')?.score || 0
           };
 
           addEmotionPoint(emotionData, setSessionData);
@@ -597,7 +595,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
     const avgFear = emotions.reduce((sum, e) => sum + e.fear, 0) / emotions.length;
     const avgSadness = emotions.reduce((sum, e) => sum + e.sadness, 0) / emotions.length;
     const avgAnger = emotions.reduce((sum, e) => sum + e.anger, 0) / emotions.length;
-    const avgSurprise = emotions.reduce((sum, e) => sum + e.surprise, 0) / emotions.length;
+    const avgDisgust = emotions.reduce((sum, e) => sum + (e.disgust || 0), 0) / emotions.length;
 
     const emotionTypes = {
       joy: avgJoy,
@@ -636,7 +634,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       avgFear,
       avgSadness,
       avgAnger,
-      avgSurprise,
+      avgDisgust,
       dominant,
       keyMoments,
       volatility
@@ -738,10 +736,10 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
           `${(Math.max(...sessionData.map(e => e.sadness)) * 100).toFixed(1)}%`,
           `${(Math.min(...sessionData.map(e => e.sadness)) * 100).toFixed(1)}%`
         ],
-        ['Surprise',
-          `${(stats.avgSurprise * 100).toFixed(1)}%`,
-          `${(Math.max(...sessionData.map(e => e.surprise)) * 100).toFixed(1)}%`,
-          `${(Math.min(...sessionData.map(e => e.surprise)) * 100).toFixed(1)}%`
+        ['Disgust',
+          `${(stats.avgDisgust * 100).toFixed(1)}%`,
+          `${(Math.max(...sessionData.map(e => e.disgust)) * 100).toFixed(1)}%`,
+          `${(Math.min(...sessionData.map(e => e.disgust)) * 100).toFixed(1)}%`
         ],
       ];
 
@@ -787,13 +785,13 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
           `${(d.joy * 100).toFixed(0)}%`,
           `${(d.fear * 100).toFixed(0)}%`,
           `${(d.sadness * 100).toFixed(0)}%`,
-          `${(d.surprise * 100).toFixed(0)}%`,
+          `${(d.disgust * 100).toFixed(0)}%`,
           `${(d.anger * 100).toFixed(0)}%`
         ]);
 
       autoTable(doc, {
         startY: 30,
-        head: [['Time', 'Joy', 'Fear', 'Sadness', 'Surprise', 'Anger']],
+        head: [['Time', 'Joy', 'Fear', 'Sadness', 'Disgust', 'Anger']],
         body: timelineData,
         theme: 'grid',
         headStyles: { fillColor: [147, 51, 234], fontSize: 9 },
@@ -801,11 +799,11 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         margin: { left: 15, right: 15 },
         columnStyles: {
           0: { cellWidth: 20 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 25 }
+          1: { cellWidth: 30 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 30 },
+          5: { cellWidth: 30 }
         }
       });
 
@@ -1120,15 +1118,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       dot={false}
                       name="Sadness"
                     />
-                    <Line
-                      type="monotone"
-                      dataKey="surprise"
-                      stroke="#fbbf24"
-                      strokeWidth={1.5}
-                      dot={false}
-                      name="Surprise"
-                      strokeDasharray="5 5"
-                    />
+
                     <Line
                       type="monotone"
                       dataKey="anger"
