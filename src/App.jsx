@@ -5,6 +5,26 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
+// ADD AFTER IMPORTS:
+const perfMonitor = {
+  humeCallTimes: [],
+  geminiCallTimes: [],
+
+  trackHume(duration) {
+    this.humeCallTimes.push(duration);
+    if (this.humeCallTimes.length > 50) this.humeCallTimes.shift();
+  },
+
+  trackGemini(duration) {
+    this.geminiCallTimes.push(duration);
+  },
+
+  getAverageHumeTime() {
+    if (this.humeCallTimes.length === 0) return 0;
+    return (this.humeCallTimes.reduce((a, b) => a + b, 0) / this.humeCallTimes.length).toFixed(0);
+  }
+};
+
 // Optimized REST-only setup
 const HUME_API_KEYS = [
   import.meta.env.VITE_HUME_API_KEY_1,
@@ -25,31 +45,59 @@ const GEMINI_API_KEYS = [
   import.meta.env.VITE_GEMINI_API_KEY_3,
 ].filter(key => key);
 
+// ADD THIS:
+const getNextGeminiKey = () => {
+  const key = GEMINI_API_KEYS[currentGeminiKeyIndex];
+  currentGeminiKeyIndex = (currentGeminiKeyIndex + 1) % GEMINI_API_KEYS.length;
+  return key;
+};
+
 let currentHumeKeyIndex = 0;
 let currentGeminiKeyIndex = 0;
 let globalCallCount = 0; // Development tracking
+
+let lastRotationTime = 0;
+const ROTATION_COOLDOWN = 1000; // 1 second cooldown between rotations
+
+const canRotateKey = () => {
+  const now = Date.now();
+  if (now - lastRotationTime < ROTATION_COOLDOWN) {
+    return false;
+  }
+  lastRotationTime = now;
+  return true;
+};
 
 // Memory-safe session management
 const MAX_SESSION_POINTS = 800; // ~20 minutes at 1.5s intervals
 
 // Simple REST-based emotion analysis with rotation
 const analyzeWithRotatingKey = async (frameData) => {
+  const startTime = Date.now(); // ADD THIS
   const key = HUME_API_KEYS[currentHumeKeyIndex];
 
   try {
-    const response = await fetch('https://api.hume.ai/v0/batch/jobs', {
+    const response = await fetch('https://api.hume.ai/v0/stream/models', {
       method: 'POST',
       headers: {
         'X-Hume-Api-Key': key,
+        'Content-Type': 'application/json',
       },
-      body: frameData
+      body: JSON.stringify({
+        models: { face: {} },
+        data: frameData,
+        stream: false
+      })
     });
 
     if (response.status === 402 || response.status === 429) {
-      // Rotate key and retry once on quota errors
+      if (!canRotateKey()) {
+        console.warn('⏳ Rotation cooldown active, waiting...');
+        await new Promise(resolve => setTimeout(resolve, ROTATION_COOLDOWN));
+      }
       currentHumeKeyIndex = (currentHumeKeyIndex + 1) % HUME_API_KEYS.length;
       console.log(`🔄 Rotated to Hume Key #${currentHumeKeyIndex + 1} (${response.status})`);
-      return analyzeWithRotatingKey(frameData); // Retry with new key
+      return analyzeWithRotatingKey(frameData);
     }
 
     if (!response.ok) {
@@ -57,11 +105,21 @@ const analyzeWithRotatingKey = async (frameData) => {
       return null;
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Hume] Key ${currentHumeKeyIndex + 1}, Call #${++globalCallCount}`);
+    const data = await response.json();
+
+    perfMonitor.trackHume(Date.now() - startTime); // ADD THIS
+
+    // ADD VALIDATION:
+    if (!Array.isArray(data?.predictions) || !data.predictions[0]?.emotions) {
+      console.warn('Invalid Hume response format:', data);
+      return null;
     }
 
-    return await response.json();
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Hume] Key ${currentHumeKeyIndex + 1}, Call #${++globalCallCount}, Time: ${Date.now() - startTime}ms, Avg: ${perfMonitor.getAverageHumeTime()}ms`);
+    }
+
+    return data;
   } catch (error) {
     console.error('Hume API network error:', error);
     return null;
@@ -154,12 +212,29 @@ function App() {
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
-        const formData = new FormData();
-        formData.append('file', blob, 'frame.jpg');
-        formData.append('models', JSON.stringify({ face: {} }));
-        resolve(formData);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result.split(',')[1]; // Remove data:image/jpeg;base64,
+          resolve(base64);
+        };
+        reader.readAsDataURL(blob);
       }, 'image/jpeg', 0.7); // 70% quality for bandwidth optimization
     });
+  };
+
+  // ADD THIS HELPER:
+  const retryWithBackoff = async (fn, maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const result = await fn();
+        if (result !== null) return result;
+      } catch (error) {
+        if (i === maxRetries - 1) throw error;
+      }
+      // Exponential backoff: 500ms, 1s, 2s
+      await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
+    }
+    return null;
   };
 
   // Optimized emotion capture loop
@@ -171,7 +246,9 @@ function App() {
 
       try {
         const frameData = await captureFrameAsFormData(videoRef.current);
-        const result = await analyzeWithRotatingKey(frameData);
+
+        // ADD RETRY LOGIC:
+        const result = await retryWithBackoff(() => analyzeWithRotatingKey(frameData));
 
         if (result?.predictions?.[0]?.emotions) {
           const emotions = result.predictions[0].emotions;
@@ -208,6 +285,16 @@ function App() {
   };
 
   const startSession = async () => {
+    // ADD THIS VALIDATION:
+    if (HUME_API_KEYS.length === 0) {
+      setError('⚠️ No Hume API keys configured. Please add VITE_HUME_API_KEY_1 to your .env file.');
+      return;
+    }
+    if (GEMINI_API_KEYS.length === 0) {
+      setError('⚠️ No Gemini API keys configured. Please add VITE_GEMINI_API_KEY_1 to your .env file.');
+      return;
+    }
+
     setIsPreparing(true);
     setShowResults(false);
     setSummary('');
@@ -347,18 +434,32 @@ Use professional yet warm language. Be specific with timestamps. Write in a flow
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+
+            // ENHANCED QUOTA DETECTION:
+            const isQuotaError =
+              response.status === 429 ||
+              response.status === 402 ||
+              errorData.error?.code === 'RESOURCE_EXHAUSTED' ||
+              errorData.error?.status === 'RESOURCE_EXHAUSTED';
+
+            if (isQuotaError) {
+              console.warn(`🔄 Gemini Key #${currentGeminiKeyIndex} quota exhausted, rotating...`);
+              lastError = new Error(`Quota exhausted: ${response.status}`);
+              continue;
+            }
+
             console.error(`Gemini Key #${currentGeminiKeyIndex} failed:`, response.status, errorData);
             lastError = new Error(`API Error: ${response.status}`);
-            continue; // Try next key
+            continue;
           }
 
-          // If we got here, it worked!
+          // Success - break the loop
           break;
         } catch (err) {
           console.error(`Gemini Key #${currentGeminiKeyIndex} error:`, err);
           lastError = err;
           if (attempt === GEMINI_API_KEYS.length - 1) {
-            throw lastError; // All keys failed
+            throw lastError;
           }
         }
       }
