@@ -157,6 +157,8 @@ function App() {
   const [error, setError] = useState('');
   const [participantName, setParticipantName] = useState('');
   const [sessionNotes, setSessionNotes] = useState('');
+  const [cameraDevices, setCameraDevices] = useState([]);
+  const [selectedCameraId, setSelectedCameraId] = useState('');
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -180,16 +182,27 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (consent) {
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        const videoInputs = devices.filter(d => d.kind === 'videoinput');
+        setCameraDevices(videoInputs);
+        if (videoInputs.length > 0) {
+          setSelectedCameraId(videoInputs[0].deviceId);
+        }
+      });
+    }
+  }, [consent]);
+
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        },
+      const constraints = {
+        video: selectedCameraId
+          ? { deviceId: { exact: selectedCameraId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -853,6 +866,19 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
               <div className="space-y-4">
                 {!isRecording && !isPreparing && (
                   <>
+                    {cameraDevices.length > 1 && (
+                      <select
+                        value={selectedCameraId}
+                        onChange={(e) => setSelectedCameraId(e.target.value)}
+                        className="w-full bg-white/10 text-white px-4 py-2 rounded-lg border border-white/20 mb-3"
+                      >
+                        {cameraDevices.map(device => (
+                          <option key={device.deviceId} value={device.deviceId}>
+                            {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <input
                       type="text"
                       placeholder="Participant Name (optional)"
