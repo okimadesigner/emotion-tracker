@@ -693,7 +693,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         {/* Header */}
         <div className="text-center mb-8 pt-8">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-            <Activity className="w-10 h-10 text-purple-400 animate-pulse" />
+            <Activity className="w-8 h-8 md:w-10 md:h-10 text-purple-400 animate-pulse" />
             Emotion Expression Tracker
           </h1>
           <p className="text-purple-300">Real-time facial expression analysis powered by Hume AI</p>
