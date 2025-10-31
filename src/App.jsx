@@ -68,19 +68,24 @@ const canRotateKey = () => {
   return true;
 };
 
+
+
 // WebSocket-based emotion analysis (browser-compatible)
 const analyzeWithWebSocket = (frameData) => {
   return new Promise((resolve) => {
     const key = HUME_API_KEYS[currentHumeKeyIndex];
     const startTime = Date.now();
 
-    // Create WebSocket connection
+    // Create WebSocket connection with API key in URL
     const ws = new WebSocket(`wss://api.hume.ai/v0/stream/models?apikey=${key}`);
 
     let hasResponse = false;
+    let connectionTimeout;
 
     ws.onopen = () => {
-      // Send frame data through WebSocket
+      console.log('✅ WebSocket connected to Hume AI');
+
+      // Send configuration and frame data
       ws.send(JSON.stringify({
         models: {
           face: {}
@@ -88,23 +93,37 @@ const analyzeWithWebSocket = (frameData) => {
         raw_text: false,
         data: frameData
       }));
+
+      // Set timeout for response
+      connectionTimeout = setTimeout(() => {
+        if (!hasResponse) {
+          console.warn('⏱️ WebSocket timeout - no response after 5s');
+          ws.close();
+          resolve(null);
+        }
+      }, 5000);
     };
 
     ws.onmessage = (event) => {
       if (hasResponse) return; // Only process first response
       hasResponse = true;
+      clearTimeout(connectionTimeout);
 
       try {
         const data = JSON.parse(event.data);
         perfMonitor.trackHume(Date.now() - startTime);
 
-        // Parse WebSocket response format
+        console.log('🔍 Hume WebSocket Response:', data);
+
+        // Parse WebSocket response format (multiple possible structures)
         const emotions =
           data?.face?.predictions?.[0]?.emotions ||
           data?.predictions?.[0]?.emotions ||
+          data?.models?.face?.predictions?.[0]?.emotions ||
           null;
 
         if (emotions) {
+          console.log('✅ Emotions extracted:', emotions.slice(0, 3).map(e => `${e.name}: ${(e.score * 100).toFixed(0)}%`));
           resolve({ predictions: [{ emotions }] });
         } else {
           console.warn('❌ No emotions in WebSocket response:', data);
@@ -119,94 +138,27 @@ const analyzeWithWebSocket = (frameData) => {
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('🔴 WebSocket error:', error);
+      clearTimeout(connectionTimeout);
 
       // Try rotating key on error
-      if (!canRotateKey()) {
-        resolve(null);
-        return;
+      if (canRotateKey()) {
+        currentHumeKeyIndex = (currentHumeKeyIndex + 1) % HUME_API_KEYS.length;
+        console.log(`🔄 Rotated to Hume Key #${currentHumeKeyIndex + 1} (WebSocket error)`);
       }
-
-      currentHumeKeyIndex = (currentHumeKeyIndex + 1) % HUME_API_KEYS.length;
-      console.log(`🔄 Rotated to Hume Key #${currentHumeKeyIndex + 1} (WebSocket error)`);
 
       ws.close();
       resolve(null);
     };
 
-    // Timeout after 5 seconds
-    setTimeout(() => {
+    ws.onclose = () => {
+      clearTimeout(connectionTimeout);
       if (!hasResponse) {
-        console.warn('⏱️ WebSocket timeout');
-        ws.close();
+        console.warn('⚠️ WebSocket closed without response');
         resolve(null);
       }
-    }, 5000);
+    };
   });
-};
-
-// Memory-safe session management
-const MAX_SESSION_POINTS = 800; // ~20 minutes at 1.5s intervals
-
-// Simple REST-based emotion analysis with rotation
-const analyzeWithRotatingKey = async (frameData) => {
-  const startTime = Date.now(); // ADD THIS
-  const key = HUME_API_KEYS[currentHumeKeyIndex];
-
-  try {
-    const response = await fetch('https://api.hume.ai/v0/stream/models', {
-      method: 'POST',
-      headers: {
-        'X-Hume-Api-Key': key,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        models: { face: {} },
-        data: frameData,
-        stream: false
-      })
-    });
-
-    if (response.status === 402 || response.status === 429) {
-      if (!canRotateKey()) {
-        console.warn('⏳ Rotation cooldown active, waiting...');
-        await new Promise(resolve => setTimeout(resolve, ROTATION_COOLDOWN));
-      }
-      currentHumeKeyIndex = (currentHumeKeyIndex + 1) % HUME_API_KEYS.length;
-      console.log(`🔄 Rotated to Hume Key #${currentHumeKeyIndex + 1} (${response.status})`);
-      return analyzeWithRotatingKey(frameData);
-    }
-
-    if (!response.ok) {
-      console.warn(`Hume API error: ${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-
-    perfMonitor.trackHume(Date.now() - startTime); // ADD THIS
-
-    // DEBUG: Log the actual structure
-    console.log('🔍 Hume Response Structure:', JSON.stringify(data, null, 2));
-
-    // Try multiple possible response formats
-    const emotions =
-      data?.predictions?.[0]?.emotions ||           // Format 1
-      data?.face?.predictions?.[0]?.emotions ||     // Format 2
-      data?.[0]?.results?.predictions?.[0]?.emotions || // Format 3
-      null;
-
-    if (!emotions) {
-      console.warn('❌ No emotions found in Hume response:', data);
-      return null;
-    }
-
-    // Return in expected format
-    return { predictions: [{ emotions }] };
-  } catch (error) {
-    console.error('Hume API network error:', error);
-    return null;
-  }
 };
 
 // Memory-safe emotion data addition
@@ -378,7 +330,7 @@ function App() {
         const frameData = await captureFrameAsFormData(videoRef.current);
 
         // ADD RETRY LOGIC:
-        const result = await retryWithBackoff(() => analyzeWithRotatingKey(frameData));
+        const result = await retryWithBackoff(() => analyzeWithWebSocket(frameData));
 
         if (result?.predictions?.[0]?.emotions) {
           const emotions = result.predictions[0].emotions;
