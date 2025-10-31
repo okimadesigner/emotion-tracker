@@ -181,6 +181,20 @@ function App() {
     });
   }, []);
 
+  // Auto-refresh device list every 5 seconds for hot-plugged cameras
+  useEffect(() => {
+    const interval = setInterval(() => {
+      listCameras().then(devices => {
+        setCameraDevices(devices);
+        // Only update selected camera if current one is no longer available
+        if (selectedCameraId && !devices.find(d => d.deviceId === selectedCameraId)) {
+          setSelectedCameraId(devices.length > 0 ? devices[0].deviceId : null);
+        }
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedCameraId]);
+
   useEffect(() => {
     return () => {
       if (streamRef.current) {
@@ -863,19 +877,24 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
               <div className="space-y-4">
                 {!isRecording && !isPreparing && (
                   <>
-                    {cameraDevices.length > 1 && (
+                    <div>
+                      <label className="block text-purple-200 text-sm font-medium mb-2">Camera</label>
                       <select
                         value={selectedCameraId || ''}
                         onChange={(e) => setSelectedCameraId(e.target.value)}
-                        className="w-full bg-white/10 text-white px-4 py-2 rounded-lg border border-white/20 mb-3"
+                        className="w-full bg-white/10 text-white px-4 py-2 rounded-lg border border-white/20"
                       >
-                        {cameraDevices.map(device => (
-                          <option key={device.deviceId} value={device.deviceId}>
-                            {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
-                          </option>
-                        ))}
+                        {cameraDevices.length === 0 ? (
+                          <option>Detecting cameras...</option>
+                        ) : (
+                          cameraDevices.map(device => (
+                            <option key={device.deviceId} value={device.deviceId}>
+                              {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
+                            </option>
+                          ))
+                        )}
                       </select>
-                    )}
+                    </div>
                     <input
                       type="text"
                       placeholder="Participant Name (optional)"
