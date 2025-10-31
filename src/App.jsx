@@ -59,6 +59,11 @@ let globalCallCount = 0; // Development tracking
 let lastRotationTime = 0;
 const ROTATION_COOLDOWN = 1000; // 1 second cooldown between rotations
 
+// Memory-safe session management
+const MAX_SESSION_POINTS = 800; // ~20 minutes at 1.5s intervals
+
+
+
 const canRotateKey = () => {
   const now = Date.now();
   if (now - lastRotationTime < ROTATION_COOLDOWN) {
