@@ -390,30 +390,44 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
   const analyzeEmotions = () => {
     const emotions = sessionData;
-    
+
+    // Handle empty session data
+    if (emotions.length === 0) {
+      return {
+        avgJoy: 0,
+        avgFear: 0,
+        avgSadness: 0,
+        avgAnger: 0,
+        avgSurprise: 0,
+        dominant: 'none',
+        keyMoments: 'No emotional data collected',
+        volatility: 'N/A'
+      };
+    }
+
     const avgJoy = emotions.reduce((sum, e) => sum + e.joy, 0) / emotions.length;
     const avgFear = emotions.reduce((sum, e) => sum + e.fear, 0) / emotions.length;
     const avgSadness = emotions.reduce((sum, e) => sum + e.sadness, 0) / emotions.length;
     const avgAnger = emotions.reduce((sum, e) => sum + e.anger, 0) / emotions.length;
     const avgSurprise = emotions.reduce((sum, e) => sum + e.surprise, 0) / emotions.length;
-    
-    const emotionTypes = { 
-      joy: avgJoy, 
-      fear: avgFear, 
-      sadness: avgSadness, 
+
+    const emotionTypes = {
+      joy: avgJoy,
+      fear: avgFear,
+      sadness: avgSadness,
       anger: avgAnger,
-      surprise: avgSurprise 
+      surprise: avgSurprise
     };
-    const dominant = Object.keys(emotionTypes).reduce((a, b) => 
+    const dominant = Object.keys(emotionTypes).reduce((a, b) =>
       emotionTypes[a] > emotionTypes[b] ? a : b
     );
-    
+
     // Find key moments (top 3 emotional peaks)
     const joyPeaks = emotions
       .map((e, i) => ({ timestamp: e.timestamp, value: e.joy, index: i }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 3);
-    
+
     const fearPeaks = emotions
       .map((e, i) => ({ timestamp: e.timestamp, value: e.fear, index: i }))
       .sort((a, b) => b.value - a.value)
@@ -429,15 +443,15 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
     const variance = joyValues.reduce((sum, val) => sum + Math.pow(val - avgJoy, 2), 0) / joyValues.length;
     const volatility = variance > 0.015 ? 'High' : variance > 0.008 ? 'Moderate' : 'Low';
 
-    return { 
-      avgJoy, 
-      avgFear, 
-      avgSadness, 
-      avgAnger, 
+    return {
+      avgJoy,
+      avgFear,
+      avgSadness,
+      avgAnger,
       avgSurprise,
-      dominant, 
-      keyMoments, 
-      volatility 
+      dominant,
+      keyMoments,
+      volatility
     };
   };
 
