@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Square, Download, Plus, Activity, AlertCircle } from 'lucide-react';
+import { Camera, Square, Download, Plus, Activity, AlertCircle, ChevronDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -877,21 +877,28 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                   <>
                     <div>
                       <label className="block text-purple-200 text-sm font-medium mb-2">Camera</label>
-                      <select
-                        value={selectedCameraId || ''}
-                        onChange={(e) => setSelectedCameraId(e.target.value)}
-                        className="w-full bg-white/10 text-white py-2 pl-4 pr-8 rounded-lg border border-white/20"
-                      >
-                        {cameraDevices.length === 0 ? (
-                          <option>Detecting cameras...</option>
-                        ) : (
-                          cameraDevices.map(device => (
-                            <option key={device.deviceId} value={device.deviceId}>
-                              {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
-                            </option>
-                          ))
-                        )}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={selectedCameraId || ''}
+                          onChange={(e) => setSelectedCameraId(e.target.value)}
+                          className="w-full bg-white/10 text-white py-2 pl-4 pr-10 rounded-lg border border-white/20 appearance-none"
+                        >
+                          {cameraDevices.length === 0 ? (
+                            <option>Detecting cameras...</option>
+                          ) : (
+                            cameraDevices.map(device => (
+                              <option key={device.deviceId} value={device.deviceId}>
+                                {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                        {/* Custom Chevron Down Icon */}
+                        <ChevronDown
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white pointer-events-none"
+                          size={16}
+                        />
+                      </div>
                     </div>
                     <input
                       type="text"
