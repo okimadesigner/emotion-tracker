@@ -136,11 +136,9 @@ const addEmotionPoint = (emotionData, setSessionData) => {
   });
 };
 
-// Smart AI summary triggering
+// Smart AI summary triggering (no duration restriction)
 const shouldTriggerAISummary = (sessionData, recordingTime, aiEnabled = true) => {
-  return aiEnabled &&
-         sessionData.length >= 20 &&
-         recordingTime >= 120; // 2+ minutes
+  return aiEnabled && sessionData.length >= 5; // generate for any length
 };
 
 function App() {
