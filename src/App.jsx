@@ -231,6 +231,12 @@ function App() {
 
   // Optimized frame capture and analysis
   const captureFrameAsFormData = (videoElement) => {
+    // ✅ ADD VALIDATION
+    if (!videoElement.videoWidth || !videoElement.videoHeight) {
+      console.warn('⚠️ Video dimensions not ready:', videoElement.videoWidth, videoElement.videoHeight);
+      return Promise.reject(new Error('Video not ready'));
+    }
+
     const canvas = document.createElement('canvas');
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
@@ -238,13 +244,25 @@ function App() {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(videoElement, 0, 0);
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
+        // ✅ ADD NULL CHECK
+        if (!blob) {
+          console.error('❌ Failed to create blob from canvas');
+          reject(new Error('Blob creation failed'));
+          return;
+        }
+
         const reader = new FileReader();
         reader.onloadend = () => {
-          const base64 = reader.result.split(',')[1]; // Remove data:image/jpeg;base64,
+          const base64 = reader.result.split(',')[1];
+          if (!base64) {
+            reject(new Error('Base64 encoding failed'));
+            return;
+          }
           resolve(base64);
         };
+        reader.onerror = () => reject(new Error('FileReader error'));
         reader.readAsDataURL(blob);
       }, 'image/jpeg', 0.7); // 70% quality for bandwidth optimization
     });
@@ -271,6 +289,13 @@ function App() {
 
     const captureLoop = async () => {
       if (!isRunning || !videoRef.current) return;
+
+      // ✅ ADD VIDEO READY CHECK
+      if (videoRef.current.readyState < 2) {
+        console.warn('⏳ Video not ready, skipping frame');
+        setTimeout(captureLoop, 500);
+        return;
+      }
 
       try {
         const frameData = await captureFrameAsFormData(videoRef.current);
