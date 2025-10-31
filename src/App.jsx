@@ -120,6 +120,24 @@ const analyzeWithWebSocket = (frameData) => {
 
         console.log('🔍 Hume WebSocket Response:', data);
 
+        // ✅ CHECK FOR RATE LIMIT OR QUOTA ERROR
+        const isRateLimited =
+          data?.error?.includes('rate limit') ||
+          data?.error?.includes('quota') ||
+          data?.code === 'rate_limit_exceeded' ||
+          data?.code === 'quota_exceeded';
+
+        if (isRateLimited) {
+          console.warn('⚠️ Hume rate limit hit, rotating key...');
+          if (canRotateKey()) {
+            currentHumeKeyIndex = (currentHumeKeyIndex + 1) % HUME_API_KEYS.length;
+            console.log(`🔄 Rotated to Hume Key #${currentHumeKeyIndex + 1} (rate limit)`);
+          }
+          ws.close();
+          resolve(null); // Will trigger retry with new key
+          return;
+        }
+
         // Parse WebSocket response format (multiple possible structures)
         const emotions =
           data?.face?.predictions?.[0]?.emotions ||
