@@ -893,14 +893,23 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       dot={false}
                       name="Sadness"
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="surprise" 
-                      stroke="#fbbf24" 
-                      strokeWidth={1.5} 
+                    <Line
+                      type="monotone"
+                      dataKey="surprise"
+                      stroke="#fbbf24"
+                      strokeWidth={1.5}
                       dot={false}
                       name="Surprise"
                       strokeDasharray="5 5"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="anger"
+                      stroke="#fb923c"
+                      strokeWidth={1.5}
+                      dot={false}
+                      name="Anger"
+                      strokeDasharray="3 3"
                     />
                   </LineChart>
                 </ResponsiveContainer>
