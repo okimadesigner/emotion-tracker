@@ -1,4 +1,4 @@
-# 😵 Emotion Expression Tracker
+# 😵 Inside Out - Emotion Tracker
 
 > Real-time facial emotion analysis in the browser, powered by Hume AI + Gemini Pro. Production-ready with automatic API key rotation.
 
