@@ -969,7 +969,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 pt-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 flex items-center justify-center gap-3">
             <Activity className="w-8 h-8 md:w-10 md:h-10 text-purple-400 animate-pulse" />
             Inside Out - Emotion Tracker
           </h1>
