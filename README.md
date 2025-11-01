@@ -152,4 +152,4 @@ MIT License - feel free to use for research, education, or commercial projects.
 
 ---
 
-**Built with ❤️ for emotion research and human-computer interaction studies.**
+**Built with ❤️ for Prism.**
