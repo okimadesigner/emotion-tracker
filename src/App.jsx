@@ -676,11 +676,11 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
       // Title
       doc.setFontSize(22);
-      doc.setTextColor(147, 51, 234); // Purple
+      doc.setTextColor(151, 20, 77); // New color #97144D
       doc.text('Emotion Expression Analysis Report', 20, 25);
 
       // Divider line
-      doc.setDrawColor(147, 51, 234);
+      doc.setDrawColor(151, 20, 77);
       doc.setLineWidth(0.5);
       doc.line(20, 30, 190, 30);
 
