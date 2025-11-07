@@ -3,7 +3,6 @@ import { Camera, Square, Download, Plus, Activity, AlertCircle, ChevronDown } fr
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
 
 // ADD AFTER IMPORTS:
 const perfMonitor = {
@@ -493,7 +492,7 @@ function App() {
       const prompt = `You are an expert emotional intelligence analyst. Analyze this ${Math.floor(recordingTime / 60)} minute and ${recordingTime % 60} second emotional expression session.
 
 DATA SUMMARY:
-- Dominant emotion: ${stats.dominant}
+- Top emotions: ${stats.topEmotions.map(e => `${e.name} (${e.percentage}%)`).join(', ')}
 - Average Joy: ${(stats.avgJoy * 100).toFixed(1)}%
 - Average Fear/Anxiety: ${(stats.avgFear * 100).toFixed(1)}%
 - Average Sadness: ${(stats.avgSadness * 100).toFixed(1)}%
@@ -626,9 +625,15 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       anger: avgAnger,
       disgust: avgDisgust
     };
-    const dominant = Object.keys(emotionTypes).reduce((a, b) =>
-      emotionTypes[a] > emotionTypes[b] ? a : b
-    );
+
+    // Get top 3 emotions sorted by value
+    const topEmotions = Object.entries(emotionTypes)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        percentage: (value * 100).toFixed(1)
+      }));
 
     // Find key moments (top 3 emotional peaks)
     const joyPeaks = emotions
@@ -657,7 +662,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       avgSadness,
       avgAnger,
       avgDisgust,
-      dominant,
+      topEmotions,
       keyMoments,
       volatility
     };
@@ -719,18 +724,43 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         currentY += (notesLines.length * 5) + 10;
       }
 
-      // Capture chart as image
-      const chartElement = document.querySelector('.recharts-wrapper');
-      if (chartElement) {
-        try {
-          const canvas = await html2canvas(chartElement);
-          const chartImage = canvas.toDataURL('image/png');
-          doc.addImage(chartImage, 'PNG', 20, currentY, 170, 80);
-          currentY += 90;
-        } catch (chartError) {
-          console.error('Error capturing chart:', chartError);
-        }
-      }
+      // Create emotion intensity bars (instead of chart screenshot)
+      doc.setFontSize(14);
+      doc.setTextColor(151, 20, 77);
+      doc.text('Emotional Intensity Overview', 20, currentY);
+      currentY += 10;
+
+      // Create horizontal bars for each emotion
+      const emotionBars = [
+        { name: 'Joy', value: stats.avgJoy, color: [167, 139, 250] },
+        { name: 'Fear', value: stats.avgFear, color: [248, 113, 113] },
+        { name: 'Sadness', value: stats.avgSadness, color: [96, 165, 250] },
+        { name: 'Anger', value: stats.avgAnger, color: [251, 146, 60] },
+        { name: 'Disgust', value: stats.avgDisgust, color: [52, 211, 153] }
+      ].sort((a, b) => b.value - a.value); // Sort by highest to lowest
+
+      emotionBars.forEach((emotion, i) => {
+        const barY = currentY + (i * 12);
+
+        // Emotion label
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        doc.text(emotion.name, 20, barY + 5);
+
+        // Bar background (light gray)
+        doc.setFillColor(240, 240, 240);
+        doc.rect(50, barY, 120, 8, 'F');
+
+        // Bar fill (emotion color)
+        doc.setFillColor(...emotion.color);
+        doc.rect(50, barY, 120 * emotion.value, 8, 'F');
+
+        // Percentage text
+        doc.setTextColor(60, 60, 60);
+        doc.text(`${(emotion.value * 100).toFixed(1)}%`, 175, barY + 5);
+      });
+
+      currentY += 70;
 
       // Check if we need a new page for the table
       if (currentY > 200) {
@@ -787,7 +817,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
       doc.setFontSize(10);
       doc.setTextColor(40, 40, 40);
-      doc.text(`• Dominant Emotion: ${stats.dominant.charAt(0).toUpperCase() + stats.dominant.slice(1)}`, 25, currentY);
+      doc.text(`• Top Emotions: ${stats.topEmotions.map(e => `${e.name} (${e.percentage}%)`).join(', ')}`, 25, currentY);
       currentY += 6;
       doc.text(`• Emotional Volatility: ${stats.volatility}`, 25, currentY);
       currentY += 6;
@@ -1205,6 +1235,14 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       name="Anger"
                       strokeDasharray="3 3"
                     />
+                    <Line
+                      type="monotone"
+                      dataKey="disgust"
+                      stroke="#34d399"
+                      strokeWidth={2.5}
+                      dot={false}
+                      name="Disgust"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -1251,8 +1289,15 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       <p className="text-white text-2xl font-bold">{sessionData.length}</p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                      <p className="text-purple-300 text-sm mb-1">Dominant Emotion</p>
-                      <p className="text-white text-xl font-bold capitalize">{stats.dominant}</p>
+                      <p className="text-purple-300 text-sm mb-1">Top Emotions</p>
+                      <p className="text-white text-sm font-semibold">
+                        {stats.topEmotions.map((e, i) => (
+                          <span key={i}>
+                            {e.name} ({e.percentage}%)
+                            {i < stats.topEmotions.length - 1 && <br />}
+                          </span>
+                        ))}
+                      </p>
                     </div>
                     <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
                       <p className="text-purple-300 text-sm mb-1">Volatility</p>
