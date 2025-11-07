@@ -1097,47 +1097,41 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 )}
               </div>
 
-              <div className="flex flex-col h-full">
-                <div className="space-y-4 flex-1">
-                  {!isRecording && !isPreparing && (
-                    <>
-                      <div>
-                        <label className="block text-gray-200 text-sm font-medium mb-2">Camera</label>
-                        <div className="relative">
-                          <select
-                            value={selectedCameraId || ''}
-                            onChange={(e) => setSelectedCameraId(e.target.value)}
-                            className="w-full bg-black/40 text-white py-2 pl-4 pr-10 rounded-lg border border-white/30 appearance-none backdrop-blur-sm hover:bg-white/10 transition-all"
-                          >
-                            {cameraDevices.length === 0 ? (
-                              <option>Detecting cameras...</option>
-                            ) : (
-                              cameraDevices.map(device => (
-                                <option key={device.deviceId} value={device.deviceId}>
-                                  {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
-                                </option>
-                              ))
-                            )}
-                          </select>
-                          {/* Custom Chevron Down Icon */}
-                          <ChevronDown
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white pointer-events-none"
-                            size={16}
-                          />
-                        </div>
+              <div className="space-y-4">
+                {!isRecording && !isPreparing && (
+                  <>
+                    <div>
+                      <label className="block text-gray-200 text-sm font-medium mb-2">Camera</label>
+                      <div className="relative">
+                        <select
+                          value={selectedCameraId || ''}
+                          onChange={(e) => setSelectedCameraId(e.target.value)}
+                          className="w-full bg-black/40 text-white py-2 pl-4 pr-10 rounded-lg border border-white/30 appearance-none backdrop-blur-sm hover:bg-white/10 transition-all"
+                        >
+                          {cameraDevices.length === 0 ? (
+                            <option>Detecting cameras...</option>
+                          ) : (
+                            cameraDevices.map(device => (
+                              <option key={device.deviceId} value={device.deviceId}>
+                                {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                        {/* Custom Chevron Down Icon */}
+                        <ChevronDown
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white pointer-events-none"
+                          size={16}
+                        />
                       </div>
-                      <input
-                        type="text"
-                        placeholder="Participant Name (optional)"
-                        value={participantName}
-                        onChange={(e) => setParticipantName(e.target.value)}
-                        className="w-full bg-black/40 text-white px-4 py-2 rounded-lg border border-white/30 placeholder-gray-400 backdrop-blur-sm focus:border-[#97144D] focus:ring-1 focus:ring-[#97144D] transition-all"
-                      />
-                    </>
-                  )}
-                </div>
-                <div className="mt-auto">
-                  {!isRecording && !isPreparing && (
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Participant Name (optional)"
+                      value={participantName}
+                      onChange={(e) => setParticipantName(e.target.value)}
+                      className="w-full bg-black/40 text-white px-4 py-2 rounded-lg border border-white/30 placeholder-gray-400 backdrop-blur-sm focus:border-[#97144D] focus:ring-1 focus:ring-[#97144D] transition-all"
+                    />
                     <button
                       onClick={startSession}
                       className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-102 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
@@ -1145,26 +1139,26 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       <Camera className="w-5 h-5" />
                       Start Session
                     </button>
-                  )}
-                  {isPreparing && (
-                    <button
-                      disabled
-                      className="w-full bg-white/10 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 backdrop-blur-sm"
-                    >
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Preparing...
-                    </button>
-                  )}
-                  {isRecording && (
-                    <button
-                      onClick={stopSession}
-                      className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-102 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
-                    >
-                      <Square className="w-5 h-5 fill-current" />
-                      Stop & Generate Report
-                    </button>
-                  )}
-                </div>
+                  </>
+                )}
+                {isPreparing && (
+                  <button
+                    disabled
+                    className="flex-1 bg-white/10 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 backdrop-blur-sm"
+                  >
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Preparing...
+                  </button>
+                )}
+                {isRecording && (
+                  <button
+                    onClick={stopSession}
+                    className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-102 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
+                  >
+                    <Square className="w-5 h-5 fill-current" />
+                    Stop & Generate Report
+                  </button>
+                )}
               </div>
             </div>
 
