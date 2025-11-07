@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ColorBends from './components/ColorBends';
 import { Camera, Square, Download, Plus, Activity, AlertCircle, ChevronDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
@@ -975,40 +976,67 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
   if (!consent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md border border-white/20 shadow-2xl">
-          <Camera className="w-16 h-16 text-purple-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-4 text-center">Camera Access Required</h2>
-          <p className="text-purple-200 mb-6 text-center leading-relaxed">
-            This application uses your camera to analyze facial expressions in real-time using Hume AI technology. 
-            Your video is processed securely and never stored on our servers.
-          </p>
-          <button
-            onClick={() => setConsent(true)}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg"
-          >
-            I Understand, Continue
-          </button>
+      <>
+        <ColorBends
+          colors={["#ff0844", "#ffb199", "#ffd447", "#85ffc7", "#297fff", "#ad00ff"]}
+          rotation={45}
+          speed={0.2}
+          scale={1.1}
+          frequency={1.3}
+          warpStrength={1.1}
+          mouseInfluence={1.0}
+          parallax={0.5}
+          noise={0.1}
+          transparent={false}
+        />
+        <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
+          <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-8 max-w-md border border-white/20 shadow-2xl">
+            <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-4 text-center">Camera Access Required</h2>
+            <p className="text-gray-200 mb-6 text-center leading-relaxed">
+              This application uses your camera to analyze facial expressions in real-time using Hume AI technology.
+              Your video is processed securely and never stored on our servers.
+            </p>
+            <button
+              onClick={() => setConsent(true)}
+              className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)]"
+            >
+              I Understand, Continue
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-      <div className="max-w-6xl mx-auto">
+    <>
+      <ColorBends
+        colors={["#ff0844", "#ffb199", "#ffd447", "#85ffc7", "#297fff", "#ad00ff"]}
+        rotation={30}
+        speed={0.2}
+        scale={1.1}
+        frequency={1.2}
+        warpStrength={0.9}
+        mouseInfluence={1.0}
+        parallax={0.5}
+        noise={0.1}
+        transparent={false}
+      />
+      <div className="relative min-h-screen p-4 z-10">
+        <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 pt-8">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-            <Activity className="w-8 h-8 md:w-10 md:h-10 text-purple-400 animate-pulse" />
+            <Activity className="w-8 h-8 md:w-10 md:h-10 text-[#97144D] animate-pulse" />
             Inside Out - Emotion Tracker
           </h1>
-          <p className="text-purple-300">Real-time facial expression analysis powered by Hume AI</p>
+          <p className="text-gray-300">Real-time facial expression analysis powered by Hume AI</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
+          <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3 backdrop-blur-md">
             <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
             <p className="text-red-200">{error}</p>
           </div>
@@ -1017,7 +1045,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         {!showResults ? (
           <div className="grid md:grid-cols-2 gap-6">
             {/* Video Feed */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
               <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4">
                 <video
                   ref={videoRef}
@@ -1027,7 +1055,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                   className="w-full h-full object-cover"
                 />
                 {isRecording && (
-                  <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg">
+                  <div className="absolute top-4 right-4 flex items-center gap-2 bg-[#97144D] text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-[0_0_20px_rgba(151,20,77,0.5)]">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                     {formatTime(recordingTime)}
                   </div>
@@ -1035,7 +1063,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 {!isRecording && !isPreparing && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="text-center">
-                      <Camera className="w-16 h-16 text-purple-300 mx-auto mb-4" />
+                      <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <p className="text-white text-lg">Ready to start</p>
                     </div>
                   </div>
@@ -1046,12 +1074,12 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 {!isRecording && !isPreparing && (
                   <>
                     <div>
-                      <label className="block text-purple-200 text-sm font-medium mb-2">Camera</label>
+                      <label className="block text-gray-200 text-sm font-medium mb-2">Camera</label>
                       <div className="relative">
                         <select
                           value={selectedCameraId || ''}
                           onChange={(e) => setSelectedCameraId(e.target.value)}
-                          className="w-full bg-white/10 text-white py-2 pl-4 pr-10 rounded-lg border border-white/20 appearance-none"
+                          className="w-full bg-white/5 text-white py-2 pl-4 pr-10 rounded-lg border border-white/30 appearance-none backdrop-blur-sm hover:bg-white/10 transition-all"
                         >
                           {cameraDevices.length === 0 ? (
                             <option>Detecting cameras...</option>
@@ -1075,11 +1103,11 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       placeholder="Participant Name (optional)"
                       value={participantName}
                       onChange={(e) => setParticipantName(e.target.value)}
-                      className="w-full bg-white/10 text-white px-4 py-2 rounded-lg border border-white/20 placeholder-white/50"
+                      className="w-full bg-white/5 text-white px-4 py-2 rounded-lg border border-white/30 placeholder-gray-400 backdrop-blur-sm focus:border-[#97144D] focus:ring-1 focus:ring-[#97144D] transition-all"
                     />
                     <button
                       onClick={startSession}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                      className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
                     >
                       <Camera className="w-5 h-5" />
                       Start Session
@@ -1087,9 +1115,9 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                   </>
                 )}
                 {isPreparing && (
-                  <button 
-                    disabled 
-                    className="flex-1 bg-purple-600/50 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2"
+                  <button
+                    disabled
+                    className="flex-1 bg-white/10 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 backdrop-blur-sm"
                   >
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Preparing...
@@ -1098,7 +1126,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 {isRecording && (
                   <button
                     onClick={stopSession}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                    className="flex-1 bg-[#97144D] hover:bg-[#7a1040] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] flex items-center justify-center gap-2"
                   >
                     <Square className="w-5 h-5 fill-current" />
                     Stop & Generate Report
@@ -1108,23 +1136,23 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             </div>
 
             {/* Live Emotions */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4">
                 {isRecording ? '📊 Live Emotions' : isProcessing ? '⚙️ Processing' : '⏸️ Waiting'}
               </h2>
 
               {isProcessing && (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-purple-300 mb-2 font-semibold">{processingStep}</p>
-                  <p className="text-purple-400 text-sm">This may take a few seconds...</p>
+                  <div className="w-16 h-16 border-4 border-[#97144D] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-gray-200 mb-2 font-semibold">{processingStep}</p>
+                  <p className="text-gray-400 text-sm">This may take a few seconds...</p>
                 </div>
               )}
 
               {!isRecording && !isProcessing && !currentEmotions && (
                 <div className="text-center py-12">
-                  <Activity className="w-12 h-12 text-purple-400 mx-auto mb-4 opacity-50" />
-                  <p className="text-purple-300">Click "Start Session" to begin tracking emotions in real-time</p>
+                  <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4 opacity-50" />
+                  <p className="text-gray-300">Click "Start Session" to begin tracking emotions in real-time</p>
                 </div>
               )}
 
@@ -1136,13 +1164,13 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                     .map(([emotion, value]) => (
                       <div key={emotion}>
                         <div className="flex justify-between mb-1">
-                          <span className="text-purple-200 capitalize font-medium">{emotion}</span>
+                          <span className="text-gray-200 capitalize font-medium">{emotion}</span>
                           <span className="text-white font-semibold">{(value * 100).toFixed(0)}%</span>
                         </div>
-                        <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                        <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden backdrop-blur-sm">
                           <div
                             className="h-full transition-all duration-300 rounded-full"
-                            style={{ 
+                            style={{
                               width: `${value * 100}%`,
                               backgroundColor: getEmotionColor(emotion, value)
                             }}
@@ -1151,17 +1179,17 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       </div>
                     ))}
 
-                  <div className="mt-6 p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg border border-purple-500/30 backdrop-blur-sm">
-                    <p className="text-purple-200 text-sm font-medium">
+                  <div className="mt-6 p-4 bg-[#97144D]/10 rounded-lg border border-[#97144D]/30 backdrop-blur-sm">
+                    <p className="text-gray-200 text-sm font-medium">
                       {getInsightText()}
                     </p>
                   </div>
 
-                  <div className="mt-4 p-3 bg-white/5 rounded-lg">
-                    <p className="text-purple-300 text-xs">
+                  <div className="mt-4 p-3 bg-white/5 rounded-lg backdrop-blur-sm">
+                    <p className="text-gray-300 text-xs">
                       💡 Data updates every 1.5 seconds • {sessionData.length} data points collected
                     </p>
-                    <p className="text-purple-400 text-xs mt-1">
+                    <p className="text-gray-400 text-xs mt-1">
                       🔑 Using Hume Key #{currentHumeKeyIndex + 1} of {HUME_API_KEYS.length} available
                     </p>
                   </div>
@@ -1172,56 +1200,57 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         ) : (
           <div className="space-y-6">
             {/* Chart */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 📈 Emotion Timeline
               </h2>
-              <div className="bg-white/5 rounded-lg p-4">
+              <div className="bg-black/20 rounded-lg p-4 backdrop-blur-sm">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={sessionData.filter((_, i) => i % Math.max(1, Math.floor(sessionData.length / 50)) === 0)}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                    <XAxis 
-                      dataKey="timestamp" 
+                    <XAxis
+                      dataKey="timestamp"
                       tickFormatter={formatTime}
                       stroke="#ffffff60"
                       style={{ fontSize: '12px' }}
                     />
-                    <YAxis 
+                    <YAxis
                       stroke="#ffffff60"
                       style={{ fontSize: '12px' }}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1e1b4b', 
-                        border: '1px solid #ffffff30', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
                         borderRadius: '8px',
-                        color: '#fff'
+                        color: '#fff',
+                        backdropFilter: 'blur(10px)'
                       }}
                       labelFormatter={formatTime}
                       formatter={(value) => `${(value * 100).toFixed(1)}%`}
                     />
                     <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="joy" 
-                      stroke="#a78bfa" 
-                      strokeWidth={2.5} 
+                    <Line
+                      type="monotone"
+                      dataKey="joy"
+                      stroke="#a78bfa"
+                      strokeWidth={2.5}
                       dot={false}
                       name="Joy"
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="fear" 
-                      stroke="#f87171" 
-                      strokeWidth={2.5} 
+                    <Line
+                      type="monotone"
+                      dataKey="fear"
+                      stroke="#f87171"
+                      strokeWidth={2.5}
                       dot={false}
                       name="Fear"
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="sadness" 
-                      stroke="#60a5fa" 
-                      strokeWidth={2.5} 
+                    <Line
+                      type="monotone"
+                      dataKey="sadness"
+                      stroke="#60a5fa"
+                      strokeWidth={2.5}
                       dot={false}
                       name="Sadness"
                     />
@@ -1249,7 +1278,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             </div>
 
             {/* Session Notes */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 📝 Session Notes
               </h2>
@@ -1257,18 +1286,18 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 placeholder="Add session notes..."
                 value={sessionNotes}
                 onChange={(e) => setSessionNotes(e.target.value)}
-                className="w-full bg-white/10 text-white px-4 py-3 rounded-lg border border-white/20 placeholder-white/50 resize-none"
+                className="w-full bg-white/5 text-white px-4 py-3 rounded-lg border border-white/30 placeholder-gray-400 resize-none backdrop-blur-sm focus:border-[#97144D] focus:ring-1 focus:ring-[#97144D] transition-all"
                 rows="3"
               />
             </div>
 
             {/* Summary */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 🤖 AI-Generated Analysis
               </h2>
               <div className="bg-white/5 rounded-lg p-6">
-                <p className="text-purple-100 leading-relaxed whitespace-pre-line text-[15px]">
+                <p className="text-gray-100 leading-relaxed whitespace-pre-line text-[15px]">
                   {summary}
                 </p>
               </div>
@@ -1280,16 +1309,16 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 const stats = analyzeEmotions();
                 return (
                   <>
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                      <p className="text-purple-300 text-sm mb-1">Duration</p>
+                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <p className="text-gray-400 text-sm mb-1">Duration</p>
                       <p className="text-white text-2xl font-bold">{formatTime(recordingTime)}</p>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                      <p className="text-purple-300 text-sm mb-1">Data Points</p>
+                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <p className="text-gray-400 text-sm mb-1">Data Points</p>
                       <p className="text-white text-2xl font-bold">{sessionData.length}</p>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                      <p className="text-purple-300 text-sm mb-1">Top Emotions</p>
+                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <p className="text-gray-400 text-sm mb-1">Top Emotions</p>
                       <p className="text-white text-sm font-semibold">
                         {stats.topEmotions.map((e, i) => (
                           <span key={i}>
@@ -1299,8 +1328,8 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                         ))}
                       </p>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                      <p className="text-purple-300 text-sm mb-1">Volatility</p>
+                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <p className="text-gray-400 text-sm mb-1">Volatility</p>
                       <p className="text-white text-2xl font-bold">{stats.volatility}</p>
                     </div>
                   </>
@@ -1312,14 +1341,14 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={downloadPDF}
-                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                className="flex-1 bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
               >
                 <Download className="w-5 h-5" />
                 Download PDF Report
               </button>
               <button
                 onClick={clearSession}
-                className="bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2 border border-white/20"
+                className="bg-transparent hover:bg-white/5 text-white font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2 border border-white/30 hover:border-white/50"
               >
                 <Plus className="w-5 h-5" />
                 New Session
@@ -1330,13 +1359,14 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
 
         {/* Footer */}
         <div className="text-center mt-12 pb-8">
-          <p className="text-purple-400 text-sm">
+          <p className="text-white/75 text-sm">
             Powered by Hume AI • Gemini Pro • Built with ❤️ by Axis Design Lab for Prism
           </p>
         </div>
       </div>
     </div>
-  );
+  </>
+);
 }
 
 export default App;
