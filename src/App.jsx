@@ -990,7 +990,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
           transparent={false}
         />
         <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
-          <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-8 max-w-md border border-white/20 shadow-2xl">
+        <div className="bg-black/60 backdrop-blur-xl rounded-2xl p-8 max-w-md border border-white/25 shadow-2xl">
             <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-white mb-4 text-center">Camera Access Required</h2>
             <p className="text-gray-200 mb-6 text-center leading-relaxed">
@@ -1000,6 +1000,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             <button
               onClick={() => setConsent(true)}
               className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)]"
+              style={{ pointerEvents: 'auto' }}
             >
               I Understand, Continue
             </button>
@@ -1045,7 +1046,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         {!showResults ? (
           <div className="grid md:grid-cols-2 gap-6">
             {/* Video Feed */}
-            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+            <div className="bg-black/50 backdrop-blur-xl rounded-2xl p-6 border border-white/25 shadow-2xl">
               <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4">
                 <video
                   ref={videoRef}
@@ -1061,7 +1062,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                   </div>
                 )}
                 {!isRecording && !isPreparing && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md">
                     <div className="text-center">
                       <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <p className="text-white text-lg">Ready to start</p>
@@ -1079,7 +1080,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                         <select
                           value={selectedCameraId || ''}
                           onChange={(e) => setSelectedCameraId(e.target.value)}
-                          className="w-full bg-white/5 text-white py-2 pl-4 pr-10 rounded-lg border border-white/30 appearance-none backdrop-blur-sm hover:bg-white/10 transition-all"
+                          className="w-full bg-black/40 text-white py-2 pl-4 pr-10 rounded-lg border border-white/30 appearance-none backdrop-blur-sm hover:bg-white/10 transition-all"
                         >
                           {cameraDevices.length === 0 ? (
                             <option>Detecting cameras...</option>
@@ -1103,7 +1104,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                       placeholder="Participant Name (optional)"
                       value={participantName}
                       onChange={(e) => setParticipantName(e.target.value)}
-                      className="w-full bg-white/5 text-white px-4 py-2 rounded-lg border border-white/30 placeholder-gray-400 backdrop-blur-sm focus:border-[#97144D] focus:ring-1 focus:ring-[#97144D] transition-all"
+                      className="w-full bg-black/40 text-white px-4 py-2 rounded-lg border border-white/30 placeholder-gray-400 backdrop-blur-sm focus:border-[#97144D] focus:ring-1 focus:ring-[#97144D] transition-all"
                     />
                     <button
                       onClick={startSession}
@@ -1136,7 +1137,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             </div>
 
             {/* Live Emotions */}
-            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+            <div className="bg-black/50 backdrop-blur-xl rounded-2xl p-6 border border-white/25 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4">
                 {isRecording ? '📊 Live Emotions' : isProcessing ? '⚙️ Processing' : '⏸️ Waiting'}
               </h2>
@@ -1200,7 +1201,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
         ) : (
           <div className="space-y-6">
             {/* Chart */}
-            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+            <div className="bg-black/50 backdrop-blur-xl rounded-2xl p-6 border border-white/25 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 📈 Emotion Timeline
               </h2>
@@ -1278,7 +1279,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             </div>
 
             {/* Session Notes */}
-            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+            <div className="bg-black/50 backdrop-blur-xl rounded-2xl p-6 border border-white/25 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 📝 Session Notes
               </h2>
@@ -1292,7 +1293,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             </div>
 
             {/* Summary */}
-            <div className="bg-white/8 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+            <div className="bg-black/50 backdrop-blur-xl rounded-2xl p-6 border border-white/25 shadow-2xl">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 🤖 AI-Generated Analysis
               </h2>
@@ -1309,15 +1310,15 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 const stats = analyzeEmotions();
                 return (
                   <>
-                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                    <div className="bg-black/50 backdrop-blur-xl rounded-xl p-4 border border-white/25">
                       <p className="text-gray-400 text-sm mb-1">Duration</p>
                       <p className="text-white text-2xl font-bold">{formatTime(recordingTime)}</p>
                     </div>
-                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                    <div className="bg-black/50 backdrop-blur-xl rounded-xl p-4 border border-white/25">
                       <p className="text-gray-400 text-sm mb-1">Data Points</p>
                       <p className="text-white text-2xl font-bold">{sessionData.length}</p>
                     </div>
-                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                    <div className="bg-black/50 backdrop-blur-xl rounded-xl p-4 border border-white/25">
                       <p className="text-gray-400 text-sm mb-1">Top Emotions</p>
                       <p className="text-white text-sm font-semibold">
                         {stats.topEmotions.map((e, i) => (
@@ -1328,7 +1329,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                         ))}
                       </p>
                     </div>
-                    <div className="bg-white/8 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                    <div className="bg-black/50 backdrop-blur-xl rounded-xl p-4 border border-white/25">
                       <p className="text-gray-400 text-sm mb-1">Volatility</p>
                       <p className="text-white text-2xl font-bold">{stats.volatility}</p>
                     </div>
