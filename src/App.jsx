@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ColorBends from './components/ColorBends';
-import { Camera, Square, Download, Plus, Activity, AlertCircle, ChevronDown } from 'lucide-react';
+import { Camera, Square, Download, Plus, Activity, AlertCircle, ChevronDown, Play } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -1177,9 +1177,11 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
               )}
 
               {!isRecording && !isProcessing && !currentEmotions && (
-                <div className="text-center py-12">
-                  <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4 opacity-50" />
-                  <p className="text-gray-300">Click "Start Session" to begin tracking emotions in real-time</p>
+                <div className="flex flex-col items-center justify-center h-full py-12">
+                  <div className="mb-4">
+                    <Play className="w-12 h-12 text-gray-400 opacity-50" />
+                  </div>
+                  <p className="text-gray-300 text-center max-w-xs text-lg font-medium">Click "Start Session" to begin tracking emotions in real-time</p>
                 </div>
               )}
 
