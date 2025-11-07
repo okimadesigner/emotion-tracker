@@ -1054,7 +1054,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       <div className="relative min-h-screen p-4 z-10">
         <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-14 pt-8">
+        <div className="text-center mb-14 pt-20">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 flex items-center justify-center gap-3">
             Inside Out
           </h1>
