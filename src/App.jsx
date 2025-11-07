@@ -1127,7 +1127,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 {isRecording && (
                   <button
                     onClick={stopSession}
-                    className="flex-1 bg-[#97144D] hover:bg-[#7a1040] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] flex items-center justify-center gap-2"
+                    className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
                   >
                     <Square className="w-5 h-5 fill-current" />
                     Stop & Generate Report
