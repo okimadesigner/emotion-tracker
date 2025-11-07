@@ -680,10 +680,10 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       <p key={pIndex} className="mb-4 last:mb-0">
         {paragraph.split(/(\d+\.?\d*%|\d{1,2}:\d{2}|Joy|Sadness|Fear|Anger|Disgust|Neutral|Balanced|High volatility|Moderate volatility|Low volatility)/g)
           .map((part, i) => {
-            // Percentages
-            if (/^\d+\.?\d*%$/.test(part)) {
-              return <span key={i} className="text-[#97144D] font-bold">{part}</span>;
-            }
+          // Percentages
+          if (/^\d+\.?\d*%$/.test(part)) {
+            return <span key={i} className="text-[#15C66E] font-bold">{part}</span>;
+          }
             // Timestamps
             if (/^\d{1,2}:\d{2}$/.test(part)) {
               return <span key={i} className="text-cyan-400 font-semibold">{part}</span>;
