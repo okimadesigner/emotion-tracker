@@ -586,11 +586,11 @@ Use professional yet warm language. Be specific with timestamps. Write in a flow
       const stats = analyzeEmotions();
       const fallbackSummary = `Session Analysis Summary:
 
-During this ${Math.floor(recordingTime / 60)} minute and ${recordingTime % 60} second session, the participant's emotional landscape was predominantly characterized by ${stats.dominant}, which maintained an average intensity of ${(stats.avgJoy * 100).toFixed(1)}% throughout the observation period.
+During this ${Math.floor(recordingTime / 60)} minute and ${recordingTime % 60} second session, the participant's emotional landscape showed ${stats.topEmotions.map(e => e.name).join(', ')} as the primary emotions, with ${stats.topEmotions[0].name} being most prominent at ${stats.topEmotions[0].percentage}% average intensity.
 
 The emotional journey revealed several noteworthy patterns. Initial readings showed a balanced emotional state, with joy levels fluctuating between moderate and high ranges. Key transitional moments were observed, particularly during the middle portions of the session, where emotional expression demonstrated ${stats.volatility.toLowerCase()} variability, suggesting dynamic engagement with the content or environment.
 
-Overall, the participant exhibited ${sessionData.length} distinct emotional data points across the session duration. The predominance of ${stats.dominant} (${(stats.avgJoy * 100).toFixed(1)}% average), combined with ${stats.volatility.toLowerCase()} emotional volatility, indicates a generally positive and engaged emotional state. These patterns suggest effective emotional regulation and healthy responsiveness to stimuli throughout the session.`;
+Overall, the participant exhibited ${sessionData.length} distinct emotional data points across the session duration. The emotional profile showed ${stats.topEmotions[0].name} (${stats.topEmotions[0].percentage}%), ${stats.topEmotions[1].name} (${stats.topEmotions[1].percentage}%), and ${stats.topEmotions[2].name} (${stats.topEmotions[2].percentage}%) as leading emotions, combined with ${stats.volatility.toLowerCase()} emotional volatility, indicating effective emotional regulation.`;
 
       setSummary(fallbackSummary);
     }
@@ -673,6 +673,33 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatSummary = (text) => {
+    return text.split('\n\n').map((paragraph, pIndex) => (
+      <p key={pIndex} className="mb-4 last:mb-0">
+        {paragraph.split(/(\d+\.?\d*%|\d{1,2}:\d{2}|Joy|Sadness|Fear|Anger|Disgust|Neutral|Balanced|High volatility|Moderate volatility|Low volatility)/g)
+          .map((part, i) => {
+            // Percentages
+            if (/^\d+\.?\d*%$/.test(part)) {
+              return <span key={i} className="text-[#97144D] font-bold">{part}</span>;
+            }
+            // Timestamps
+            if (/^\d{1,2}:\d{2}$/.test(part)) {
+              return <span key={i} className="text-cyan-400 font-semibold">{part}</span>;
+            }
+            // Emotions
+            if (/^(Joy|Sadness|Fear|Anger|Disgust|Neutral|Balanced)$/.test(part)) {
+              return <span key={i} className="text-purple-300 font-semibold">{part}</span>;
+            }
+            // Volatility
+            if (/volatility/i.test(part)) {
+              return <span key={i} className="text-yellow-400 font-semibold">{part}</span>;
+            }
+            return part;
+          })}
+      </p>
+    ));
   };
 
   const downloadPDF = async () => {
@@ -999,7 +1026,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             </p>
             <button
               onClick={() => setConsent(true)}
-              className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)]"
+              className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-102 shadow-[0_0_30px_rgba(151,20,77,0.4)]"
               style={{ pointerEvents: 'auto' }}
             >
               I Understand, Continue
@@ -1108,7 +1135,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                     />
                     <button
                       onClick={startSession}
-                      className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
+                      className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-102 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
                     >
                       <Camera className="w-5 h-5" />
                       Start Session
@@ -1127,7 +1154,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
                 {isRecording && (
                   <button
                     onClick={stopSession}
-                    className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
+                    className="w-full bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-102 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
                   >
                     <Square className="w-5 h-5 fill-current" />
                     Stop & Generate Report
@@ -1297,10 +1324,10 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 🤖 AI-Generated Analysis
               </h2>
-              <div className="bg-white/5 rounded-lg p-6">
-                <p className="text-gray-100 leading-relaxed whitespace-pre-line text-[15px]">
-                  {summary}
-                </p>
+              <div className="bg-black/40 rounded-lg p-6 backdrop-blur-md">
+                <div className="text-gray-100 leading-relaxed text-[15px]">
+                  {formatSummary(summary)}
+                </div>
               </div>
             </div>
 
@@ -1342,7 +1369,7 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={downloadPDF}
-                className="flex-1 bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-4 px-6 rounded-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
+                className="flex-1 bg-[#97144D] hover:bg-[#c91f5d] text-white font-semibold py-4 px-6 rounded-lg transition-all transform hover:scale-102 shadow-[0_0_30px_rgba(151,20,77,0.4)] hover:shadow-[0_0_40px_rgba(201,31,93,0.6)] flex items-center justify-center gap-2"
               >
                 <Download className="w-5 h-5" />
                 Download PDF Report
