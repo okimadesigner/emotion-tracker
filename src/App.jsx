@@ -1054,11 +1054,11 @@ Overall, the participant exhibited ${sessionData.length} distinct emotional data
       <div className="relative min-h-screen p-4 z-10">
         <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12 pt-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-            Inside Out - Emotion Tracker
+        <div className="text-center mb-14 pt-8">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 flex items-center justify-center gap-3">
+            Inside Out
           </h1>
-          <p className="text-gray-300">Real-time facial expression analysis powered by Hume AI</p>
+          <p className="text-gray-300 text-lg">Real time emotion insights as they happen!</p>
         </div>
 
         {/* Error Message */}
