@@ -60,7 +60,7 @@ let lastRotationTime = 0;
 const ROTATION_COOLDOWN = 1000; // 1 second cooldown between rotations
 
 // Memory-safe session management
-const MAX_SESSION_POINTS = 800; // ~20 minutes at 1.5s intervals
+const MAX_SESSION_POINTS = 1200; // 30 minutes at 1.5s intervals
 
 
 
