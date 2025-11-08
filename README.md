@@ -21,12 +21,16 @@
 ---
 
 ### ⚡ Tech Stack
-- **Frontend**: React 18 + Vite (ESM, fast HMR)
-- **Styling**: Tailwind CSS (backdrop-blur, gradients, responsive)
+- **Frontend**: React 19 + Vite 7 (ESM, fast HMR)
+- **Styling**: Tailwind CSS 3.4 + PostCSS + Autoprefixer (backdrop-blur, gradients, responsive)
 - **Icons**: Lucide React
 - **Charts**: Recharts (interactive timelines)
 - **PDF**: jsPDF + jspdf-autotable (professional reports)
+- **3D Graphics**: Three.js (background animations)
+- **Canvas**: html2canvas (screenshot capabilities)
+- **Storage**: IndexedDB (idb) (local data persistence)
 - **AI APIs**: Hume AI (WebSocket streaming) + Google Gemini Pro
+- **Linting**: ESLint 9 (flat config) + React hooks plugin
 - **Development**: Local Vite dev server + GitHub deployment
 
 ---
